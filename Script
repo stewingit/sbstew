@@ -1,5 +1,8 @@
+-- UTG script
+
+-- loadstring(game:HttpGet("https://raw.githubusercontent.com/appel-yep/UTG/refs/heads/main/Script"))()
 -- My UI
--- https://docs.sirius.menu/rayfield
+--https://docs.sirius.menu/rayfield
 
 local url = "https://raw.githubusercontent.com/appel-yep/UTG/refs/heads/main/Script"
 local g = getgenv()
@@ -58,8 +61,9 @@ UTGTab:CreateLabel("Untitled Tag Glove Buttons")
 UTGTab:CreateButton({
     Name = "Tp to Barzil portal",
     Callback = function()
-        if game.PlaceId == 6403373529 or game.PlaceId == 11520107397 or game.PlaceId == 9015014224 then
-            local player = game.Players.LocalPlayer
+        if game.PlaceId == 6403373529 or game.PlaceId == 11520107397 or game.PlaceId == 9015014224 then    firetouchinterest(game:GetService("Players").LocalPlayer.Character:WaitForChild("Head"), Workspace.Lobby.brazil.portal, 0) task.wait(0.1) firetouchinterest(game:GetService("Players").LocalPlayer.Character:WaitForChild("Head"), Workspace.Lobby.brazil.portal, 1)
+task.wait(2)
+local player = game.Players.LocalPlayer
             local character = player.Character or player.CharacterAdded:Wait()
             local rootPart = character:WaitForChild("HumanoidRootPart")
             rootPart.CFrame = workspace.Lobby.brazil.portal.CFrame
@@ -110,7 +114,7 @@ UTGTab:CreateButton({
 })
 
 UTGTab:CreateButton({
-    Name = "Obtain UTG (Easy)",
+    Name = "Obtain UTG (Method 1)",
     Callback = function()
         if game.PlaceId == 115782629143468 then   
             sendMyMessage("IM A LOSER")
@@ -120,7 +124,7 @@ UTGTab:CreateButton({
             if detector then
                 fireclickdetector(detector)
             else
-                warn("Target ClickDetector not found at workspace.Sign.Part1")
+                warn("Target ClickDetector not found")
             end
         else
             Rayfield:Notify({
@@ -134,7 +138,7 @@ UTGTab:CreateButton({
 })
 
 UTGTab:CreateButton({
-    Name = "Obtain UTG (Hard)",
+    Name = "Obtain UTG (Method 2)",
     Callback = function()
         if game.PlaceId == 115782629143468 then   
             local character = game.Players.LocalPlayer.Character
@@ -159,5 +163,6 @@ UTGTab:CreateButton({
 
 UTGTab:CreateParagraph({
     Title = "Instructions",
-    Content = "1. TP to Barzil portal.\n2. In Barzil, use 'Complete Obby'.\n3. In the UTG place, use Easy or Hard method to finish. If you’re in a region which restricts chat, you’ll have to use the hard method."
+    Content = "1. TP to Barzil portal.\n2. In Barzil, use 'Complete Obby'.\n3. In the UTG place, use Method 1 or 2 to finish. If you’re in a region which restricts chat, you’ll have to use method 2."
 })
+
