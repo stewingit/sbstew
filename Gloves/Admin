@@ -61,7 +61,7 @@ FinalRoomButton = AdminTab:CreateButton({
 -- 3. Anti-AFK Toggle
 local AntiAFKConnection
 local AntiAFKToggle = AdminTab:CreateToggle({
-    Name = "Anti-Idle",
+    Name = "Anti-IdleDisconnect",
     CurrentValue = false,
     Flag = "AntiAFK_Flag",
     Callback = function(Value)
@@ -87,7 +87,7 @@ AntiAFKToggle:Set(false)
 
 AdminTab:CreateParagraph({
     Title = "Instructions",
-    Content = "1. In the Lobby, use 'Teleport to application button'.\n2. Once in the Application place, use 'Tp to the final room'.\n3. Turn Anti-idle on and wait 1 hour to get the badge."
+    Content = "1. In the Lobby, use 'Teleport to application button'.\n2. Once in the Application place, use 'Tp to the final room'.\n3. Turn Anti-IdleDisconnect on and wait 1 hour to get the badge."
 })
 
 -- 4. Check Time Remaining Button
