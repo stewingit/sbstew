@@ -37,9 +37,14 @@ local Places = {
     ["UTG_Obby"] = (currentPlaceId == 115782629143468),
 }
 
+local loadedAnyTab = false -- Tracker for supported content
+
 local function shouldLoad(locationList)
     for _, name in pairs(locationList) do
-        if Places[name] then return true end
+        if Places[name] then 
+            loadedAnyTab = true
+            return true 
+        end
     end
     return false
 end
@@ -52,12 +57,17 @@ local function loadTab(url)
 end
 
 --- 5. Tab Loading Section ---
-
 -- UNTITLED TAG GLOVE
 if shouldLoad({"Lobby", "Barzil", "UTG_Obby"}) then
     loadTab("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Gloves/UTG")
 end
 
------------------------------------------------
+if not loadedAnyTab then
+    local ErrorTab = Window:CreateTab("Unsupported", "circle-alert")
+    ErrorTab:CreateParagraph({
+        Title = "Unsupported Experience",
+        Content = "This script does not support the current game (ID: " .. currentPlaceId .. "). Please head to Slap Battles to use this scripts features!"
+    })
+end
 
 Rayfield:LoadConfiguration()
