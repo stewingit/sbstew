@@ -1,13 +1,9 @@
 -- ADMIN GLOVE SCRIPT
 local Rayfield = getgenv().sbstew_Rayfield
 local Window = getgenv().sbstew_Window
+local Places = getgenv().sbstew_Places
 
 local startTime = nil
-
-local function isAtLobby()
-    local id = game.PlaceId
-    return (id == 6403373529 or id == 9015014224 or id == 11520107397)
-end
 
 -- Create Tab
 local AdminTab = Window:CreateTab("Admin Glove", "shield-check")
@@ -17,7 +13,7 @@ AdminTab:CreateLabel("Admin Glove Buttons")
 AdminTab:CreateButton({
     Name = "Teleport to application button",
     Callback = function()
-        if isAtLobby() then
+        if Places["Lobby"] then
             game.ReplicatedStorage.Assets.Retro.Parent = game.Workspace
             task.wait(0.1)
             local root = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -39,7 +35,7 @@ AdminTab:CreateButton({
 AdminTab:CreateButton({
     Name = "Tp to the final room",
     Callback = function()
-        if game.PlaceId == 16034567693 then
+        if Places["Application"] then
             local root = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             if root then
                 root.CFrame = CFrame.new(499.860291, 77.2709045, 60.5982056)
@@ -96,7 +92,7 @@ AdminTab:CreateButton({
             Rayfield:Notify({
                 Title = "Timer Not Started",
                 Content = "You must use 'Tp to the final room' first!",
-                Duration = 4,
+                Duration = 3,
                 Image = "circle-alert"
             })
         else
@@ -106,8 +102,8 @@ AdminTab:CreateButton({
             if timeLeft <= 0 then
                 Rayfield:Notify({
                     Title = "Time Up!",
-                    Content = "The hour is up! You should have the badge.",
-                    Duration = 5,
+                    Content = "The hour is up! You should get the badge now or very soon.",
+                    Duration = 3,
                     Image = "hourglass"
                 })
             else
