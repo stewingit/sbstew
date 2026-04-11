@@ -1,5 +1,5 @@
 -- UNTITLED TAG GLOVE TAB SCRIPT
-local Rayfield = getgenv().SBStew_Rayfield
+local Rayfield = getgenv().sbstew_Rayfield
 local Window = Rayfield.WindowState -- Accessing the window context
 
 -- Internal Helper Functions
