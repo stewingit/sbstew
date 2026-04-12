@@ -3,11 +3,10 @@ local g = getgenv()
 local currentPlaceId = game.PlaceId
 local loaderUrl = "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Script"
 
--- 1. Auto Queue Logic (Modified to save the last tab name)
+-- 1. Auto Queue Logic
 local q = queue_on_teleport or queueteleport or (syn and syn.queue_on_teleport)
 if q and not g.sbstew_Queued then
     g.sbstew_Queued = true
-    -- We embed the last tab name into the queued script so it persists across servers
     local lastTabPayload = g.sbstew_LastTab and ("getgenv().sbstew_LastTab = '" .. g.sbstew_LastTab .. "'; ") or ""
     q(lastTabPayload .. 'loadstring(game:HttpGet("' .. loaderUrl .. '"))()')
 end
@@ -17,7 +16,7 @@ if g.sbstew_Rayfield and typeof(g.sbstew_Rayfield.Destroy) == "function" then
     pcall(function() g.sbstew_Rayfield:Destroy() end)
 end
 
--- 3. Initialise Rayfield
+-- 3. Initialize Rayfield
 local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/stewingit/stewfield/refs/heads/main/source.lua'))()
 g.sbstew_Rayfield = Rayfield
 
@@ -31,7 +30,24 @@ local Window = Rayfield:CreateWindow({
 
 g.sbstew_Window = Window
 
---- 4. External Logic & Place ID Storage ---
+--- 4. Tab Registry Hook ---
+g.sbstew_TabObjects = {} 
+local oldCreateTab = Window.CreateTab
+
+Window.CreateTab = function(self, name, icon)
+    local tabObject = oldCreateTab(self, name, icon)
+    g.sbstew_TabObjects[name] = tabObject
+    task.spawn(function()
+        local tabButton = nil
+        repeat 
+            task.wait(0.5)
+        until g.sbstew_Rayfield
+    end)
+
+    return tabObject
+end
+
+--- 5. External Logic & Place ID Storage ---
 loadstring(game:HttpGet("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Places"))()
 
 local function loadTab(url)
@@ -41,50 +57,34 @@ local function loadTab(url)
     if not success then warn("Failed to load tab: " .. err) end
 end
 
---- 5. Tab Loading Section ---
--- ADMIN GLOVE
+--- 6. Tab Loading Section ---
 if shouldLoad({"Lobby", "Application"}) then
     loadTab("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Gloves/Admin")
 end
 
--- BOXER GLOVE
 if shouldLoad({"Lobby", "Barzil"}) then
     loadTab("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Gloves/Boxer")
 end
 
--- UNTITLED TAG GLOVE
 if shouldLoad({"Lobby", "Barzil", "UTG_Obby"}) then
     loadTab("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Gloves/UTG")
 end
 
--- 6. Auto-Select Last Tab Logic
-if g.sbstew_LastTab then
-    local Elements = Window.Elements
-    local targetTab = Elements:FindFirstChild(g.sbstew_LastTab)
-    
-    if targetTab then
-        if typeof(targetTab.Select) == "function" then
-            targetTab:Select()
-        end
+--- 7. Auto-Select Last Tab Execution ---
+-- We wait a tiny bit to make sure all loadstrings finished creating their tabs
+task.delay(1, function()
+    if g.sbstew_LastTab and g.sbstew_TabObjects[g.sbstew_LastTab] then
+        g.sbstew_TabObjects[g.sbstew_LastTab]:Select()
     end
-end
+end)
 
 -- Check if anything loaded
 if not getgenv().sbstew_LoadedAnyTab then
-    local ErrorTab = getgenv().sbstew_Window:CreateTab("Unsupported", "circle-alert")
+    local ErrorTab = Window:CreateTab("Unsupported", "circle-alert")
     ErrorTab:CreateParagraph({
         Title = "Unsupported Experience",
-        Content = "This script does not support the current game (ID: " .. currentPlaceId .. "). Please head over to Slap Battles to use this scripts features!"
+        Content = "This script does not support the current game (ID: " .. currentPlaceId .. ")."
     })
 end
 
 Rayfield:LoadConfiguration()
-
---- 7. Tab Tracker Hook ---
-for _, tab in pairs(Window.Tabs or {}) do
-    -- We hook into the tab's internal button click
-    -- Note: This depends on the specific UI library structure, but ensures g.sbstew_LastTab is updated
-    tab.OnSelected:Connect(function()
-        g.sbstew_LastTab = tab.Name
-    end)
-end
