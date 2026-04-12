@@ -53,6 +53,11 @@ if shouldLoad({"Lobby", "Application"}) then
     loadTab("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Gloves/Admin")
 end
 
+-- BOXER GLOVE
+if shouldLoad({"Lobby", "Barzil"}) then
+    loadTab("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Gloves/Boxer")
+end
+
 -- UNTITLED TAG GLOVE
 if shouldLoad({"Lobby", "Barzil", "UTG_Obby"}) then
     loadTab("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Gloves/UTG")
