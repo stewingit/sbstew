@@ -73,11 +73,19 @@ BoxerTab:CreateButton({
     Name = "Tp to glove",
     Callback = function()
         if Places["Barzil"] then
+            local character = game.Players.LocalPlayer.Character
             local target = workspace:FindFirstChild("BoxingGloves")
-            local root = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             
-            if target and root then
-                root.CFrame = target.CFrame
+            if character and target then
+                local rootPart = character:FindFirstChild("HumanoidRootPart")
+                local humanoid = character:FindFirstChildOfClass("Humanoid")
+                
+                if rootPart and humanoid then
+                    -- Trigger the Jump state
+                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                    task.wait(0.05)
+                    rootPart.CFrame = target.CFrame
+                end
             else
                 Rayfield:Notify({
                     Title = "Not Found",
