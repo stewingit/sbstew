@@ -1,0 +1,102 @@
+-- BOXER GLOVE TAB SCRIPT
+local Rayfield = getgenv().sbstew_Rayfield
+local Window = getgenv().sbstew_Window
+local Places = getgenv().sbstew_Places
+
+-- Create Tab
+local BoxerTab = Window:CreateTab("Boxer Glove", "box")
+BoxerTab:CreateLabel("Boxer Glove Buttons")
+
+-- 1. TP to Brazil Portal
+BoxerTab:CreateButton({
+    Name = "Tp to Barzil portal",
+    Callback = function()
+        if Places["Lobby"] then    
+            firetouchinterest(game:GetService("Players").LocalPlayer.Character:WaitForChild("Head"), Workspace.Lobby.brazil.portal, 0) 
+            task.wait(0.1) 
+            firetouchinterest(game:GetService("Players").LocalPlayer.Character:WaitForChild("Head"), Workspace.Lobby.brazil.portal, 1)
+            task.wait(2)
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = workspace.Lobby.brazil.portal.CFrame
+        else
+            Rayfield:Notify({
+                Title = "Wrong Game",
+                Content = "You must be in the Slap Battles Lobby to use this.",
+                Duration = 4,
+                Image = "circle-alert",
+            })
+        end
+    end,
+})
+
+-- 2. Tp to chimney
+BoxerTab:CreateButton({
+    Name = "Tp to Chimney",
+    Callback = function()
+        if Places["Barzil"] then
+            local root = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if root then
+                if not workspace:FindFirstChild("BoxingGloves") then
+                    root.CFrame = workspace.Buildings.house:FindFirstChild("TP").CFrame * CFrame.new(0, 10, 0)
+                end
+                
+                -- Wait logic
+                Rayfield:Notify({
+                    Title = "Waiting",
+                    Content = "Waiting for BoxingGloves to spawn...",
+                    Duration = 2
+                })
+                
+                repeat task.wait() until workspace:FindFirstChild("BoxingGloves")
+                task.wait(0.6)
+                
+                Rayfield:Notify({
+                    Title = "Success",
+                    Content = "Gloves have spawned!",
+                    Duration = 3,
+                    Image = "check"
+                })
+            end
+        else
+            Rayfield:Notify({
+                Title = "Wrong Game",
+                Content = "You must be in Barzil to use this.",
+                Duration = 4,
+                Image = "circle-alert",
+            })
+        end
+    end,
+})
+
+-- 3. TP to Glove
+BoxerTab:CreateButton({
+    Name = "Tp to glove",
+    Callback = function()
+        if Places["Barzil"] then
+            local target = workspace:FindFirstChild("BoxingGloves")
+            local root = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            
+            if target and root then
+                root.CFrame = target.Handle.CFrame
+            else
+                Rayfield:Notify({
+                    Title = "Not Found",
+                    Content = "BoxingGloves not found. Did you use the Chimney TP first?",
+                    Duration = 4,
+                    Image = "circle-alert"
+                })
+            end
+        else
+            Rayfield:Notify({
+                Title = "Wrong Game",
+                Content = "You must be in Barzil to use this.",
+                Duration = 4,
+                Image = "circle-alert",
+            })
+        end
+    end,
+})
+
+BoxerTab:CreateParagraph({
+    Title = "Instructions",
+    Content = "1. In Lobby: Use 'Tp to Barzil portal'.\n2. In Barzil: Use 'Tp to Chimney'.\n3. Wait until the notification says gloves have spawned.\n4. Use 'Tp to glove' then click the glove to get the badge."
+})
