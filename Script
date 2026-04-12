@@ -3,11 +3,13 @@ local g = getgenv()
 local currentPlaceId = game.PlaceId
 local loaderUrl = "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Script"
 
--- 1. Auto Queue Logic
+-- 1. Auto Queue Logic (Modified to save the last tab name)
 local q = queue_on_teleport or queueteleport or (syn and syn.queue_on_teleport)
 if q and not g.sbstew_Queued then
     g.sbstew_Queued = true
-    q('loadstring(game:HttpGet("' .. loaderUrl .. '"))()')
+    -- We embed the last tab name into the queued script so it persists across servers
+    local lastTabPayload = g.sbstew_LastTab and ("getgenv().sbstew_LastTab = '" .. g.sbstew_LastTab .. "'; ") or ""
+    q(lastTabPayload .. 'loadstring(game:HttpGet("' .. loaderUrl .. '"))()')
 end
 
 -- 2. Cleanup existing UI
@@ -39,14 +41,6 @@ local function loadTab(url)
     if not success then warn("Failed to load tab: " .. err) end
 end
 
-
-local function loadTab(url)
-    local success, err = pcall(function()
-        loadstring(game:HttpGet(url))()
-    end)
-    if not success then warn("Failed to load tab: " .. err) end
-end
-
 --- 5. Tab Loading Section ---
 -- ADMIN GLOVE
 if shouldLoad({"Lobby", "Application"}) then
@@ -63,6 +57,18 @@ if shouldLoad({"Lobby", "Barzil", "UTG_Obby"}) then
     loadTab("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Gloves/UTG")
 end
 
+-- 6. Auto-Select Last Tab Logic
+if g.sbstew_LastTab then
+    local Elements = Window.Elements
+    local targetTab = Elements:FindFirstChild(g.sbstew_LastTab)
+    
+    if targetTab then
+        if typeof(targetTab.Select) == "function" then
+            targetTab:Select()
+        end
+    end
+end
+
 -- Check if anything loaded
 if not getgenv().sbstew_LoadedAnyTab then
     local ErrorTab = getgenv().sbstew_Window:CreateTab("Unsupported", "circle-alert")
@@ -73,3 +79,12 @@ if not getgenv().sbstew_LoadedAnyTab then
 end
 
 Rayfield:LoadConfiguration()
+
+--- 7. Tab Tracker Hook ---
+for _, tab in pairs(Window.Tabs or {}) do
+    -- We hook into the tab's internal button click
+    -- Note: This depends on the specific UI library structure, but ensures g.sbstew_LastTab is updated
+    tab.OnSelected:Connect(function()
+        g.sbstew_LastTab = tab.Name
+    end)
+end
