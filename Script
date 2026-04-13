@@ -33,9 +33,6 @@ g.sbstew_Window = Window
 --- 4. External Logic & Place ID Storage ---
 loadstring(game:HttpGet("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Places"))()
 
--- Table to track created tabs to prevent duplicates
-local createdTabs = {}
-
 -- Modified loadTab to return the tab created by the external script
 local function loadTab(url)
     local success, result = pcall(function()
@@ -52,35 +49,44 @@ end
 local isLobby = getgenv().sbstew_Places["Lobby"]
 local BadgeTab
 
+-- Helper to find an existing tab by name
+local function getExistingTab(name)
+    local tabContainer = Window.Elements -- Adjusted based on typical Rayfield structure
+    if tabContainer and tabContainer:FindFirstChild(name) then
+        return tabContainer[name]
+    end
+    return nil
+end
+
 if isLobby then
     BadgeTab = Window:CreateTab("Badges", "medal")
     BadgeTab:CreateLabel("Select a badge glove to load its tab")
 end
 
--- Helper to handle the "Load on click" or "Auto Load" logic
 local function handleGlove(name, locations, url)
     if shouldLoad(locations) then
         if isLobby then
             BadgeTab:CreateButton({
                 Name = name,
                 Callback = function()
-                    -- Check if tab already exists in our tracking table
-                    if createdTabs[name] then
-                        createdTabs[name]:Select()
+                    local existing = getExistingTab(name)
+                    
+                    if existing then
+                        if typeof(existing) == "table" and existing.Select then
+                            existing:Select()
+                        end
                     else
                         local newTab = loadTab(url)
-                        -- If the script returned a tab object, store and select it
-                        if newTab and typeof(newTab) == "table" then
-                            createdTabs[name] = newTab
-                            if newTab.Select then
-                                newTab:Select()
-                            end
+                        if newTab and typeof(newTab) == "table" and newTab.Select then
+                            newTab:Select()
                         end
                     end
                 end,
             })
         else
-            loadTab(url)
+            if not getExistingTab(name) then
+                loadTab(url)
+            end
         end
     end
 end
