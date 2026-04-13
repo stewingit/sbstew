@@ -1,0 +1,55 @@
+local Rayfield = getgenv().sbstew_Rayfield
+local Window = getgenv().sbstew_Window
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local stats = LocalPlayer:FindFirstChild("leaderstats")
+
+local accountAge = LocalPlayer.AccountAge
+local keypadSpawn = Workspace:FindFirstChild("Keypad") and "Yes" or "No"
+local codeKeypad = (#Players:GetPlayers() * 25) + 1100 - 7
+local checkSlap = (stats and stats:FindFirstChild("Slaps")) and stats.Slaps.Value or 0
+
+local currentGlove = "None"
+if stats and stats:FindFirstChild("Glove") then
+    currentGlove = stats.Glove.Value
+end
+
+local glovesOwned = 0
+local totalGloves = 0
+local gloveInventory = ReplicatedStorage:FindFirstChild("GloveInventory") 
+
+if gloveInventory then
+    local children = gloveInventory:GetChildren()
+    totalGloves = #children
+    for _, glove in pairs(children) do
+        if glove:GetAttribute("OwnsGlove") == true then
+            glovesOwned = glovesOwned + 1
+        end
+    end
+end
+local generalGloveBadge = string.format("%d/%d", glovesOwned, totalGloves)
+
+local InfoTab = Window:CreateTab("Info", "info")
+
+InfoTab:CreateLabel("Instructions")
+InfoTab:CreateParagraph({
+    Title = "How to use",
+    Content = "Select a glove from the Badges tab to begin. Ensure you meet the requirements listed in the stats section below for specific glove unlocks."
+})
+InfoTab:CreateDivider()
+
+InfoTab:CreateLabel("Player & Server Information")
+InfoTab:CreateParagraph({
+    Title = "Current Stats",
+    Content = "• Account Age: " .. accountAge .. " days\n" ..
+              "• Keypad Spawn: " .. keypadSpawn .. "\n" ..
+              "• Keypad Code: " .. codeKeypad .. "\n" ..
+              "• Slaps: " .. checkSlap .. "\n" ..
+              "• Equipped Glove: " .. currentGlove .. "\n" ..
+              "• Gloves Owned: " .. generalGloveBadge
+})
+
+return InfoTab
