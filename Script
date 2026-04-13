@@ -33,11 +33,16 @@ g.sbstew_Window = Window
 --- 4. External Logic & Place ID Storage ---
 loadstring(game:HttpGet("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Places"))()
 
+-- Modified loadTab to return the tab created by the external script
 local function loadTab(url)
-    local success, err = pcall(function()
-        loadstring(game:HttpGet(url))()
+    local success, result = pcall(function()
+        return loadstring(game:HttpGet(url))()
     end)
-    if not success then warn("Failed to load tab: " .. err) end
+    if not success then 
+        warn("Failed to load tab: " .. tostring(result)) 
+        return nil
+    end
+    return result
 end
 
 --- 5. Tab Loading Section ---
@@ -46,7 +51,7 @@ local BadgeTab
 
 if isLobby then
     BadgeTab = Window:CreateTab("Badges", "medal")
-    BadgeTab:CreateLabel("Select a glove to load its interface")
+    BadgeTab:CreateLabel("Select a badge glove to load its tab")
 end
 
 -- Helper to handle the "Load on click" or "Auto Load" logic
@@ -54,9 +59,13 @@ local function handleGlove(name, locations, url)
     if shouldLoad(locations) then
         if isLobby then
             BadgeTab:CreateButton({
-                Name = "Load " .. name,
+                Name = name,
                 Callback = function()
-                    loadTab(url)
+                    local newTab = loadTab(url)
+                    -- If the script returned a tab object, select it
+                    if newTab and typeof(newTab) == "table" and newTab.Select then
+                        newTab:Select()
+                    end
                 end,
             })
         else
