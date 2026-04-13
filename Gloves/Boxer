@@ -109,3 +109,5 @@ BoxerTab:CreateParagraph({
     Title = "Instructions",
     Content = "1. In Lobby: Use 'Tp to Barzil portal'.\n2. In Barzil: Use 'Tp to Chimney'.\n3. Wait until the notification says gloves have spawned.\n4. Use 'Tp to glove' then click the glove to get the badge."
 })
+
+return BoxerTab
