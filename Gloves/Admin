@@ -125,3 +125,5 @@ AdminTab:CreateButton({
         end
     end,
 })
+
+return AdminTab
