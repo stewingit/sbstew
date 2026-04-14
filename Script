@@ -90,6 +90,7 @@ getgenv().sbstew_LoadedAnyTab = false
 
 --- 6. Badge Glove Buttons ---
 handleGlove("Admin", {"Lobby", "Application"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Gloves/Admin")
+handleGlove("Bomb", {"Lobby"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Gloves/Bomb")
 handleGlove("Boxer", {"Lobby", "Barzil"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Gloves/Boxer")
 handleGlove("UTG", {"Lobby", "Barzil", "UTG_Obby"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Gloves/UTG")
 handleGlove("Warp", {"Lobby"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Gloves/Warp")
