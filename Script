@@ -11,15 +11,15 @@ if q and not g.sbstew_Queued then
 end
 
 -- 2. Cleanup existing UI
-if g.sbstew_Rayfield and typeof(g.sbstew_Rayfield.Destroy) == "function" then
-    pcall(function() g.sbstew_Rayfield:Destroy() end)
+if g.sbstew_Stewfield and typeof(g.sbstew_Stewfield.Destroy) == "function" then
+    pcall(function() g.sbstew_Stewfield:Destroy() end)
 end
 
--- 3. Initialise Rayfield
-local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/stewingit/stewfield/refs/heads/main/source.lua'))()
-g.sbstew_Rayfield = Rayfield
+-- 3. Initialise Stewfield
+local Stewfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/stewingit/stewfield/refs/heads/main/source.lua'))()
+g.sbstew_Stewfield = Stewfield
 
-local Window = Rayfield:CreateWindow({
+local Window = Stewfield:CreateWindow({
     Name = "Auto Get Gloves",
     Icon = "hand",
     LoadingTitle = "Gloves Interface",
@@ -102,4 +102,4 @@ if not getgenv().sbstew_LoadedAnyTab then
     })
 end
 
-Rayfield:Load()
+Window:LoadConfiguration()
