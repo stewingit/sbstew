@@ -30,7 +30,7 @@ local SlapCooldown = false
 local LocalHumanoid = nil
 local Animation = nil
 local CharacterConnection = nil
-local WarpToggle = nil -- To store the toggle reference
+local WarpToggle = nil 
 
 -- Create Tab
 local WarpTab = Window:CreateTab("Warp Glove", "Zap")
@@ -70,13 +70,13 @@ local function GetTarget()
             end
         end
 
+        -- If target is dead, left, or off the map
         if not IsValid or outOfRange then
-            -- STOP IMMEDIATELY
+            getgenv().BSF = false
             LockedTarget = nil 
-            LocalHumanoid:MoveTo(LocalHumanoid.RootPart.Position)
-            
+
             task.spawn(function()
-                task.wait(0.1) -- Minimal delay to ensure MoveTo registered
+                task.wait(0.35)
                 AbilityRemote:FireServer()
                 task.wait(1)
                 Reset:FireServer()
@@ -121,19 +121,8 @@ local function GetTarget()
 end
 
 local function StartLoops()
-    -- Behavior Loop
     task.spawn(function()
         while getgenv().BSF do
-            -- Auto-Stop if Warp is obtained (Folder Check)
-            local unlocked = LocalPlayer:FindFirstChild("_unlockedGloves")
-            if unlocked and unlocked:FindFirstChild("Warp") and unlocked.Warp.Value == true then
-                getgenv().BSF = false
-task.wait(0.3)
-                if WarpToggle then WarpToggle:Set(false) end
-                Stewfield:Notify({Title = "Success", Content = "Warp is Obtained!.", Duration = 4, Image = "circle-check"})
-                break
-            end
-
             local Character = LocalPlayer.Character
             if LocalHumanoid and LocalHumanoid.RootPart and Character then
                 if not Character:FindFirstChild("InLobby") then
@@ -156,19 +145,7 @@ task.wait(0.3)
                         LocalHumanoid:MoveTo(LocalHumanoid.RootPart.Position)
                     end
                 else
-                    -- Lobby Logic: Try Warp first to verify badge
-                    local WarpGlove = Workspace.Lobby:WaitForChild("Warp", 1)
-                    if WarpGlove then
-                        fireclickdetector(WarpGlove:FindFirstChildOfClass("ClickDetector"))
-                        task.wait(0.2)
-                    end
-
-                    if LocalPlayer.leaderstats.Glove.Value == "Warp" then
-                        getgenv().BSF = false
-                        if WarpToggle then WarpToggle:Set(false) end
-                        Stewfield:Notify({Title = "Success", Content = "Warp Equipped! Stopping bot.", Duration = 5})
-                        break
-                    elseif LocalPlayer.leaderstats.Glove.Value ~= TargetGlove then
+                    if LocalPlayer.leaderstats.Glove.Value ~= TargetGlove then
                         local GloveObj = Workspace.Lobby:WaitForChild(TargetGlove, 2)
                         if GloveObj then
                             fireclickdetector(GloveObj:FindFirstChildOfClass("ClickDetector"))
@@ -203,33 +180,61 @@ task.wait(0.3)
                     Reset:FireServer()
                     task.wait(1)
                 end
+                -- Auto-equip tool logic from your provided script
+                if not Character:FindFirstChildWhichIsA("Tool") and LocalPlayer.Backpack:FindFirstChildWhichIsA("Tool") then
+                    LocalPlayer.Backpack:FindFirstChildWhichIsA("Tool").Parent = Character
+                end
             end
         end
     end)
 end
 
+WarpTab:CreateButton({
+    Name = "Get Warp",
+    Callback = function()
+        -- Only the button clicks the Warp glove detector
+        local WarpGlove = Workspace.Lobby:WaitForChild("Warp", 1)
+        if WarpGlove then
+            fireclickdetector(WarpGlove:FindFirstChildOfClass("ClickDetector"))
+            task.wait(0.2)
+        end
+
+        local unlocked = LocalPlayer:FindFirstChild("_unlockedGloves")
+        if unlocked and unlocked:FindFirstChild("Warp") and unlocked.Warp.Value == true then
+            Stewfield:Notify({Title = "Already Obtained", Content = "You already have the Warp glove!", Duration = 4, Image = "circle-alert"})
+        else
+            -- We set the variable and start loops, but do not force the Toggle UI to change
+            getgenv().BSF = true
+            if LocalPlayer.Character then 
+                CharacterLoaded(LocalPlayer.Character) 
+                StartLoops()
+            end
+        end
+    end,
+})
+
 WarpToggle = WarpTab:CreateToggle({
-    Name = "Auto Get Warp",
+    Name = "Infinite Warp",
     CurrentValue = false,
     Flag = "AutoWarp_Flag",
     Callback = function(Value)
         getgenv().BSF = Value
         
         if Value then
-            -- Handle existing character
             if LocalPlayer.Character then 
                 CharacterLoaded(LocalPlayer.Character) 
                 StartLoops()
             end
             
-            -- Re-trigger logic every time you reset/respawn
-            CharacterConnection = LocalPlayer.CharacterAdded:Connect(function(char)
-                task.wait(0.5) -- Wait for character to stabilize
-                if getgenv().BSF then
-                    CharacterLoaded(char)
-                    StartLoops()
-                end
-            end)
+            if not CharacterConnection then
+                CharacterConnection = LocalPlayer.CharacterAdded:Connect(function(char)
+                    task.wait(0.5) 
+                    if getgenv().BSF then
+                        CharacterLoaded(char)
+                        StartLoops()
+                    end
+                end)
+            end
         else
             if CharacterConnection then
                 CharacterConnection:Disconnect()
@@ -241,7 +246,7 @@ WarpToggle = WarpTab:CreateToggle({
 
 WarpTab:CreateParagraph({
     Title = "Instructions",
-    Content = "1. Turn on the toggle to start the bot.\n2. It targets a player, slaps them, uses the ability, and resets automatically.\n3. The script persists after death until you turn the toggle off or get the badge."
+    Content = "1. 'Get Warp' Starts the bot if warp is not owned, tries once.\n2. 'Infinite Warp' runs the bot infinitely over and over. The visual toggle will only change when you click it."
 })
 
 return WarpTab
