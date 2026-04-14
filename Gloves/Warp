@@ -29,12 +29,13 @@ local LockedTarget = nil
 local SlapCooldown = false
 local LocalHumanoid = nil
 local Animation = nil
+local CharacterConnection = nil
 
 -- Create Tab
 local WarpTab = Window:CreateTab("Warp Glove", "Zap")
 WarpTab:CreateLabel("Warp Glove Obtainment")
 
--- Utility Functions from your logic
+-- Utility Functions
 local function ReturnValidVector3Unit(Vector)
     if Vector.Magnitude == 0 then return Vector3.zero end
     return Vector.Unit
@@ -69,7 +70,6 @@ local function GetTarget()
         end
 
         if not IsValid or outOfRange then
-            getgenv().BSF = false 
             LockedTarget = nil 
             
             task.spawn(function()
@@ -117,6 +117,81 @@ local function GetTarget()
     return nil, 512
 end
 
+local function StartLoops()
+    -- Behavior Loop
+    task.spawn(function()
+        while getgenv().BSF do
+            -- Auto-Stop if Warp is obtained
+            local unlocked = LocalPlayer:FindFirstChild("_unlockedGloves")
+            if unlocked and unlocked:FindFirstChild("Warp") and unlocked.Warp.Value == true then
+                getgenv().BSF = false
+                Stewfield:Notify({Title = "Success", Content = "Warp Obtained! Stopping bot.", Duration = 5})
+                break
+            end
+
+            local Character = LocalPlayer.Character
+            if LocalHumanoid and LocalHumanoid.RootPart and Character then
+                if not Character:FindFirstChild("InLobby") then
+                    local TargetPlayer, Distance = GetTarget()
+                    
+                    if TargetPlayer and TargetPlayer.Character then
+                        local TargetRoot = TargetPlayer.Character:FindFirstChildWhichIsA("Humanoid").RootPart
+                        if LocalHumanoid.Health > 0 and TargetRoot then
+                            local TargetPosition = TargetRoot.Position + ReturnValidVector3Unit(TargetRoot.AssemblyLinearVelocity)
+                            LocalHumanoid:MoveTo(TargetPosition)
+                            
+                            if Distance < AcceptableDistance and not SlapCooldown then
+                                SlapCooldown = true
+                                Animation:Play()
+                                SlapRemote:FireServer(TargetRoot)
+                                task.delay(0.6, function() SlapCooldown = false end)
+                            end
+                        end
+                    else
+                        LocalHumanoid:MoveTo(LocalHumanoid.RootPart.Position)
+                    end
+                else
+                    -- Lobby Logic
+                    if LocalPlayer.leaderstats.Glove.Value ~= TargetGlove then
+                        local GloveObj = Workspace.Lobby:WaitForChild(TargetGlove, 2)
+                        if GloveObj then
+                            fireclickdetector(GloveObj:FindFirstChildOfClass("ClickDetector"))
+                        end
+                    else
+                        LocalHumanoid:MoveTo(Workspace.Lobby.Teleport1.Position)
+                    end
+                end
+                
+                if LocalHumanoid and LocalHumanoid.RootPart then
+                    local Speed = BotSpeed * 2 - math.clamp(LocalHumanoid.RootPart.AssemblyLinearVelocity.Magnitude, 0, BotSpeed)
+                    LocalHumanoid.WalkSpeed = Speed
+                end
+            end
+            RunService.RenderStepped:Wait()
+        end
+    end)
+
+    -- Anti-Abuse Loop
+    task.spawn(function()
+        while task.wait(0.3) do
+            if not getgenv().BSF then break end
+            local Character = LocalPlayer.Character
+            if LocalHumanoid and Character then
+                if not Character:FindFirstChild("InLobby") then
+                    for _, v in ipairs(Character:GetChildren()) do
+                        if v:IsA("BasePart") then v.CanTouch = false end
+                    end
+                end
+                local Root = LocalHumanoid.RootPart
+                if Root and (Root.Position.Magnitude > 1536 or Root.Position.Y < -20) then
+                    Reset:FireServer()
+                    task.wait(1)
+                end
+            end
+        end
+    end)
+end
+
 WarpTab:CreateToggle({
     Name = "Auto Get Warp",
     CurrentValue = false,
@@ -125,77 +200,32 @@ WarpTab:CreateToggle({
         getgenv().BSF = Value
         
         if Value then
-            if LocalPlayer.Character then CharacterLoaded(LocalPlayer.Character) end
+            -- Handle existing character
+            if LocalPlayer.Character then 
+                CharacterLoaded(LocalPlayer.Character) 
+                StartLoops()
+            end
             
-            -- Behavior Loop
-            task.spawn(function()
-                while getgenv().BSF do
-                    local Character = LocalPlayer.Character
-                    if LocalHumanoid and LocalHumanoid.RootPart then
-                        if not Character:FindFirstChild("InLobby") then
-                            local TargetPlayer, Distance = GetTarget()
-                            
-                            if TargetPlayer and TargetPlayer.Character then
-                                local TargetRoot = TargetPlayer.Character:FindFirstChildWhichIsA("Humanoid").RootPart
-                                if LocalHumanoid.Health > 0 and TargetRoot then
-                                    local TargetPosition = TargetRoot.Position + ReturnValidVector3Unit(TargetRoot.AssemblyLinearVelocity)
-                                    LocalHumanoid:MoveTo(TargetPosition)
-                                    
-                                    if Distance < AcceptableDistance and not SlapCooldown then
-                                        SlapCooldown = true
-                                        Animation:Play()
-                                        SlapRemote:FireServer(TargetRoot)
-                                        task.delay(0.6, function() SlapCooldown = false end)
-                                    end
-                                end
-                            else
-                                LocalHumanoid:MoveTo(LocalHumanoid.RootPart.Position)
-                            end
-                        else
-                            -- Lobby Logic
-                            if LocalPlayer.leaderstats.Glove.Value ~= TargetGlove then
-                                local GloveObj = Workspace.Lobby:WaitForChild(TargetGlove, 2)
-                                if GloveObj then
-                                    fireclickdetector(GloveObj:FindFirstChildOfClass("ClickDetector"))
-                                end
-                            else
-                                LocalHumanoid:MoveTo(Workspace.Lobby.Teleport1.Position)
-                            end
-                        end
-                        -- Speed Logic
-                        local Speed = BotSpeed * 2 - math.clamp(LocalHumanoid.RootPart.AssemblyLinearVelocity.Magnitude, 0, BotSpeed)
-                        LocalHumanoid.WalkSpeed = Speed
-                    end
-                    RunService.RenderStepped:Wait()
+            -- Re-trigger logic every time you reset/respawn
+            CharacterConnection = LocalPlayer.CharacterAdded:Connect(function(char)
+                task.wait(0.5) -- Wait for character to stabilize
+                if getgenv().BSF then
+                    CharacterLoaded(char)
+                    StartLoops()
                 end
             end)
-
-            -- Anti-Abuse Loop
-            task.spawn(function()
-                while task.wait(0.3) do
-                    if not getgenv().BSF then break end
-                    local Character = LocalPlayer.Character
-                    if LocalHumanoid then
-                        if not Character:FindFirstChild("InLobby") then
-                            for _, v in ipairs(Character:GetChildren()) do
-                                if v:IsA("BasePart") then v.CanTouch = false end
-                            end
-                        end
-                        local Root = LocalHumanoid.RootPart
-                        if Root and (Root.Position.Magnitude > 1536 or Root.Position.Y < -20) then
-                            Reset:FireServer()
-                            task.wait(1)
-                        end
-                    end
-                end
-            end)
+        else
+            if CharacterConnection then
+                CharacterConnection:Disconnect()
+                CharacterConnection = nil
+            end
         end
     end,
 })
 
 WarpTab:CreateParagraph({
     Title = "Instructions",
-    Content = "1. Turn on the toggle to start the bot.\n2. It will target one player, slap them off, use the ability, and then reset.\n3. Make sure you have Swapper glove unlocked."
+    Content = "1. Turn on the toggle to start the bot.\n2. It targets a player, slaps them, uses the ability, and resets automatically.\n3. The script persists after death until you turn the toggle off or get the badge."
 })
 
 return WarpTab
