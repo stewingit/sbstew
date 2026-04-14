@@ -128,8 +128,9 @@ local function StartLoops()
             local unlocked = LocalPlayer:FindFirstChild("_unlockedGloves")
             if unlocked and unlocked:FindFirstChild("Warp") and unlocked.Warp.Value == true then
                 getgenv().BSF = false
+task.wait(0.3)
                 if WarpToggle then WarpToggle:Set(false) end
-                Stewfield:Notify({Title = "Success", Content = "Warp Obtained! Stopping bot.", Duration = 5})
+                Stewfield:Notify({Title = "Success", Content = "Warp is Obtained!.", Duration = 4, Image = "circle-check"})
                 break
             end
 
