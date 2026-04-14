@@ -9,107 +9,184 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
+-- Configuration
+local Grass = Workspace.Arena["main island"].Grass
+local ZeroPosition = Grass.Position
+local BotSpeed = 21
+local RoamRange = 120
+local MaxLockDistance = 80
+local AcceptableDistance = 15
+local TargetGlove = "Swapper"
+
+-- Remotes & Assets
+local SlapRemote = ReplicatedStorage.HitSwapper
+local AbilityRemote = ReplicatedStorage:WaitForChild("SLOC")
+local SlapAnimation = ReplicatedStorage.Slap
+local Reset = LocalPlayer.Reset
+
+-- State Variables
+local LockedTarget = nil
+local SlapCooldown = false
+local LocalHumanoid = nil
+local Animation = nil
+
 -- Create Tab
 local WarpTab = Window:CreateTab("Warp Glove", "Zap")
 WarpTab:CreateLabel("Warp Glove Obtainment")
 
-local WarpBotActive = false
+-- Utility Functions from your logic
+local function ReturnValidVector3Unit(Vector)
+    if Vector.Magnitude == 0 then return Vector3.zero end
+    return Vector.Unit
+end
+
+local function CharacterLoaded(Character)
+    local Humanoid = Character:WaitForChild("Humanoid", 10)
+    LocalHumanoid = Humanoid
+    Animation = (Humanoid:FindFirstChild("Animator") or Humanoid):LoadAnimation(SlapAnimation)
+    Humanoid.AutomaticScalingEnabled = false
+    Humanoid.HipHeight = 0.1
+    
+    local Support = Humanoid.RootPart:FindFirstChild("Bot Support") or Instance.new("BodyPosition")
+    Support.Position = ZeroPosition
+    Support.MaxForce = Vector3.new(200, 0, 200)
+    Support.Name = "Bot Support"
+    Support.Parent = Humanoid.RootPart
+end
+
+-- Target Logic Core
+local function GetTarget()
+    if LockedTarget then
+        local Character = LockedTarget.Character
+        local IsValid = LockedTarget.Parent == Players and Character and Character:FindFirstChild("Humanoid") and Character.Humanoid.Health > 0
+        
+        local outOfRange = false
+        if IsValid then
+            local Root = Character.Humanoid.RootPart
+            if Root and (Root.Position - ZeroPosition).Magnitude >= RoamRange then
+                outOfRange = true
+            end
+        end
+
+        if not IsValid or outOfRange then
+            getgenv().BSF = false 
+            LockedTarget = nil 
+            
+            task.spawn(function()
+                task.wait(0.35)
+                AbilityRemote:FireServer()
+                task.wait(1)
+                Reset:FireServer()
+            end)
+            return nil, 512
+        end
+        
+        local Root = Character.Humanoid.RootPart
+        return LockedTarget, (LocalHumanoid.RootPart.Position - Root.Position).Magnitude
+    end
+
+    for _, v in ipairs(Players:GetPlayers()) do
+        local Character = v.Character
+        if v ~= LocalPlayer and Character and not LocalPlayer:IsFriendsWith(v.UserId) then
+            local Humanoid = Character:FindFirstChildWhichIsA("Humanoid")
+            if Humanoid and Humanoid.Health > 0 then
+                local Root = Humanoid.RootPart
+                if Root then
+                    local Distance = (LocalHumanoid.RootPart.Position - Root.Position).Magnitude
+                    local InMap = (Root.Position - ZeroPosition).Magnitude < RoamRange
+                    local InLobby = Character:FindFirstChild("InLobby")
+                    local Rock = Character:FindFirstChild("rock")
+                    local Reverse = Character:FindFirstChild("Reversed")
+                    local Skull = Character:FindFirstChild("Skull")
+                    local Counter = Character:FindFirstChild("Counterd")
+                    local Steve = Character:FindFirstChild("stevebody")
+                    local Visible = Character:FindFirstChild("CarKeysCar") or (Character:FindFirstChild("Head") or Character:FindFirstChildWhichIsA("BasePart")).Transparency == 0
+                    local BuddyBox = Character.Head:FindFirstChild("BuddyBox")
+                    local Ragdolled = Character:FindFirstChild("FakePart Right Arm")
+
+                    local Approved = (InMap and Distance <= MaxLockDistance and not Rock and not Reverse and not Steve and not Skull and Visible and not BuddyBox and not Ragdolled and not InLobby and not Counter)
+
+                    if Approved then
+                        LockedTarget = v
+                        return v, Distance
+                    end
+                end
+            end
+        end
+    end
+    return nil, 512
+end
 
 WarpTab:CreateToggle({
     Name = "Auto Get Warp",
     CurrentValue = false,
     Flag = "AutoWarp_Flag",
     Callback = function(Value)
-        WarpBotActive = Value
+        getgenv().BSF = Value
         
         if Value then
-            -- Check if already owned
-            local unlocked = LocalPlayer:FindFirstChild("_unlockedGloves")
-            if unlocked and unlocked:FindFirstChild("Warp") and unlocked.Warp.Value == true then
-                Stewfield:Notify({
-                    Title = "Already Unlocked",
-                    Content = "You already have the Warp glove!",
-                    Duration = 5,
-                    Image = "check-circle",
-                })
-                return
-            end
-
-            -- Start the Bot Logic
+            if LocalPlayer.Character then CharacterLoaded(LocalPlayer.Character) end
+            
+            -- Behavior Loop
             task.spawn(function()
-                while WarpBotActive do
-                    -- Check ownership inside loop to stop if obtained
-                    local hasWarp = false
-                    local check = LocalPlayer:FindFirstChild("_unlockedGloves")
-                    if check and check:FindFirstChild("Warp") and check.Warp.Value == true then
-                        hasWarp = true
-                    end
-
-                    if hasWarp then
-                        WarpBotActive = false
-                        Stewfield:Notify({
-                            Title = "Success!",
-                            Content = "Warp Glove has been obtained!",
-                            Duration = 5,
-                            Image = "party-popper",
-                        })
-                        break
-                    end
-
-                    -- Bot Logic Core
-                    local TargetGlove = "Swapper"
-                    local SlapRemote = ReplicatedStorage.HitSwapper
-                    local AbilityRemote = ReplicatedStorage:WaitForChild("SLOC")
-                    local SlapAnimation = ReplicatedStorage.Slap
-                    
+                while getgenv().BSF do
                     local Character = LocalPlayer.Character
-                    if Character and Character:FindFirstChild("Humanoid") then
-                        local Humanoid = Character.Humanoid
-                        local HRP = Humanoid.RootPart
-                        
-                        if Character:FindFirstChild("InLobby") then
-                            -- Equip Swapper if needed
+                    if LocalHumanoid and LocalHumanoid.RootPart then
+                        if not Character:FindFirstChild("InLobby") then
+                            local TargetPlayer, Distance = GetTarget()
+                            
+                            if TargetPlayer and TargetPlayer.Character then
+                                local TargetRoot = TargetPlayer.Character:FindFirstChildWhichIsA("Humanoid").RootPart
+                                if LocalHumanoid.Health > 0 and TargetRoot then
+                                    local TargetPosition = TargetRoot.Position + ReturnValidVector3Unit(TargetRoot.AssemblyLinearVelocity)
+                                    LocalHumanoid:MoveTo(TargetPosition)
+                                    
+                                    if Distance < AcceptableDistance and not SlapCooldown then
+                                        SlapCooldown = true
+                                        Animation:Play()
+                                        SlapRemote:FireServer(TargetRoot)
+                                        task.delay(0.6, function() SlapCooldown = false end)
+                                    end
+                                end
+                            else
+                                LocalHumanoid:MoveTo(LocalHumanoid.RootPart.Position)
+                            end
+                        else
+                            -- Lobby Logic
                             if LocalPlayer.leaderstats.Glove.Value ~= TargetGlove then
                                 local GloveObj = Workspace.Lobby:WaitForChild(TargetGlove, 2)
                                 if GloveObj then
                                     fireclickdetector(GloveObj:FindFirstChildOfClass("ClickDetector"))
                                 end
                             else
-                                -- Go to Portal
-                                Humanoid:MoveTo(Workspace.Lobby.Teleport1.Position)
-                            end
-                        else
-                            -- Arena Logic: Find Target
-                            local LockedTarget = nil
-                            for _, v in ipairs(Players:GetPlayers()) do
-                                if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
-                                    local TRoot = v.Character.Humanoid.RootPart
-                                    if TRoot and not v.Character:FindFirstChild("InLobby") and not v.Character:FindFirstChild("rock") then
-                                        LockedTarget = v
-                                        break
-                                    end
-                                end
-                            end
-
-                            if LockedTarget then
-                                local TRoot = LockedTarget.Character.Humanoid.RootPart
-                                Humanoid:MoveTo(TRoot.Position)
-                                
-                                -- Slap Logic
-                                if (HRP.Position - TRoot.Position).Magnitude < 15 then
-                                    SlapRemote:FireServer(TRoot)
-                                    task.wait(0.6)
-                                end
-                            else
-                                -- No targets, reset or swap to find new server/area
-                                task.wait(0.5)
-                                AbilityRemote:FireServer()
-                                task.wait(0.5)
-                                Character.Humanoid.Health = 0
+                                LocalHumanoid:MoveTo(Workspace.Lobby.Teleport1.Position)
                             end
                         end
+                        -- Speed Logic
+                        local Speed = BotSpeed * 2 - math.clamp(LocalHumanoid.RootPart.AssemblyLinearVelocity.Magnitude, 0, BotSpeed)
+                        LocalHumanoid.WalkSpeed = Speed
                     end
-                    task.wait(0.1)
+                    RunService.RenderStepped:Wait()
+                end
+            end)
+
+            -- Anti-Abuse Loop
+            task.spawn(function()
+                while task.wait(0.3) do
+                    if not getgenv().BSF then break end
+                    local Character = LocalPlayer.Character
+                    if LocalHumanoid then
+                        if not Character:FindFirstChild("InLobby") then
+                            for _, v in ipairs(Character:GetChildren()) do
+                                if v:IsA("BasePart") then v.CanTouch = false end
+                            end
+                        end
+                        local Root = LocalHumanoid.RootPart
+                        if Root and (Root.Position.Magnitude > 1536 or Root.Position.Y < -20) then
+                            Reset:FireServer()
+                            task.wait(1)
+                        end
+                    end
                 end
             end)
         end
@@ -118,7 +195,7 @@ WarpTab:CreateToggle({
 
 WarpTab:CreateParagraph({
     Title = "Instructions",
-    Content = "1. Turn on the toggle to auto get Warp!\n2. The bot will automatically equip Swapper and attempt to slap players then swap.\n3. The bot is basic so it might take a few tries."
+    Content = "1. Turn on the toggle to start the bot.\n2. It will target one player, slap them off, use the ability, and then reset.\n3. Make sure you have Swapper glove unlocked."
 })
 
 return WarpTab
