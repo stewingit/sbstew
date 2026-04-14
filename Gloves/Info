@@ -5,32 +5,47 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local stats = LocalPlayer:FindFirstChild("leaderstats")
 
-local accountAge = LocalPlayer.AccountAge
-local keypadSpawn = Workspace:FindFirstChild("Keypad") and "Yes" or "No"
-local codeKeypad = (#Players:GetPlayers() * 25) + 1100 - 7
-local checkSlap = (stats and stats:FindFirstChild("Slaps")) and stats.Slaps.Value or 0
-
-local currentGlove = "None"
-if stats and stats:FindFirstChild("Glove") then
-    currentGlove = stats.Glove.Value
-end
-
-local glovesOwned = 0
-local totalGloves = 0
-local gloveInventory = ReplicatedStorage:FindFirstChild("GloveInventory") 
-
-if gloveInventory then
-    local children = gloveInventory:GetChildren()
-    totalGloves = #children
-    for _, glove in pairs(children) do
-        if glove:GetAttribute("OwnsGlove") == true then
-            glovesOwned = glovesOwned + 1
+-- Helper logic for Stats
+local function getStats()
+    local stats = LocalPlayer:FindFirstChild("leaderstats")
+    local slaps = (stats and stats:FindFirstChild("Slaps")) and stats.Slaps.Value or 0
+    local currentGlove = (stats and stats:FindFirstChild("Glove")) and stats.Glove.Value or "None"
+    
+    -- Logic for Owned Gloves
+    local totalGloves = 0
+    local ownedGloves = 0
+    local unlockedFolder = LocalPlayer:FindFirstChild("_unlockedGloves")
+    if unlockedFolder then
+        local children = unlockedFolder:GetChildren()
+        totalGloves = #children
+        for _, glove in pairs(children) do
+            if glove:IsA("BoolValue") and glove.Value == true then
+                ownedGloves = ownedGloves + 1
+            end
         end
     end
+    local gloveFraction = ownedGloves .. "/" .. totalGloves
+
+    -- Logic for Null Shards
+    local shardCount = 0
+    local playerData = ReplicatedStorage:FindFirstChild("PlayerData")
+    if playerData then
+        local pFolder = playerData:FindFirstChild(LocalPlayer.Name)
+        if pFolder then
+            local shardObj = pFolder:FindFirstChild("NullShards")
+            if shardObj and shardObj:IsA("ValueBase") then
+                shardCount = shardObj.Value
+            end
+        end
+    end
+
+    return slaps, currentGlove, gloveFraction, shardCount
 end
-local generalGloveBadge = string.format("%d/%d", glovesOwned, totalGloves)
+
+local initialSlaps, initialGlove, initialFraction, initialShards = getStats()
+local keypadSpawn = Workspace:FindFirstChild("Keypad") and "Yes" or "No"
+local codeKeypad = (#Players:GetPlayers() * 25) + 1100 - 7
 
 local InfoTab = Window:CreateTab("Info", "info")
 
@@ -42,14 +57,34 @@ InfoTab:CreateParagraph({
 InfoTab:CreateDivider()
 
 InfoTab:CreateLabel("Player & Server Information")
-InfoTab:CreateParagraph({
+
+-- Create the Paragraph and store it in a variable so we can update it
+local StatsParagraph = InfoTab:CreateParagraph({
     Title = "Current Stats",
-    Content = "• Account Age: " .. accountAge .. " days\n" ..
+    Content = "• Account Age: " .. LocalPlayer.AccountAge .. " days\n" ..
+              "• Slaps: " .. initialSlaps .. "\n" ..
+              "• Null Shards: " .. initialShards .. "\n" ..
+              "• Equipped Glove: " .. initialGlove .. "\n" ..
               "• Keypad Spawn: " .. keypadSpawn .. "\n" ..
               "• Keypad Code: " .. codeKeypad .. "\n" ..
-              "• Slaps: " .. checkSlap .. "\n" ..
-              "• Equipped Glove: " .. currentGlove .. "\n" ..
-              "• Gloves Owned: " .. generalGloveBadge
+              "• Gloves Owned: " .. initialFraction
 })
+
+-- Auto-Update Logic: Refreshes the paragraph if stats change
+task.spawn(function()
+    while task.wait(1) do
+        local slaps, glove, fraction, shards = getStats()
+        StatsParagraph:Set({
+            Title = "Current Stats",
+            Content = "• Account Age: " .. LocalPlayer.AccountAge .. " days\n" ..
+                      "• Keypad Spawn: " .. keypadSpawn .. "\n" ..
+                      "• Keypad Code: " .. codeKeypad .. "\n" ..
+                      "• Slaps: " .. slaps .. "\n" ..
+                      "• Null Shards: " .. shards .. "\n" ..
+                      "• Equipped Glove: " .. glove .. "\n" ..
+                      "• Gloves Owned: " .. fraction
+        })
+    end
+end)
 
 return InfoTab
