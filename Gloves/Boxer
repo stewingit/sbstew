@@ -1,5 +1,5 @@
 -- BOXER GLOVE TAB SCRIPT
-local Rayfield = getgenv().sbstew_Rayfield
+local Stewfield = getgenv().sbstew_Stewfield
 local Window = getgenv().sbstew_Window
 local Places = getgenv().sbstew_Places
 
@@ -18,7 +18,7 @@ BoxerTab:CreateButton({
             task.wait(2)
             game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = workspace.Lobby.brazil.portal.CFrame
         else
-            Rayfield:Notify({
+            Stewfield:Notify({
                 Title = "Wrong Game",
                 Content = "You must be in the Slap Battles Lobby to use this.",
                 Duration = 4,
@@ -40,7 +40,7 @@ BoxerTab:CreateButton({
                 end
                 
                 -- Wait logic
-                Rayfield:Notify({
+                Stewfield:Notify({
                     Title = "Waiting",
                     Content = "Waiting for BoxingGloves to spawn...",
                     Duration = 2,
@@ -50,7 +50,7 @@ BoxerTab:CreateButton({
                 repeat task.wait() until workspace:FindFirstChild("BoxingGloves")
                 task.wait(0.6)
                 
-                Rayfield:Notify({
+                Stewfield:Notify({
                     Title = "Success",
                     Content = "Gloves have spawned!",
                     Duration = 3,
@@ -58,7 +58,7 @@ BoxerTab:CreateButton({
                 })
             end
         else
-            Rayfield:Notify({
+            Stewfield:Notify({
                 Title = "Wrong Game",
                 Content = "You must be in Barzil to use this.",
                 Duration = 4,
@@ -87,7 +87,7 @@ BoxerTab:CreateButton({
                     rootPart.CFrame = target.CFrame
                 end
             else
-                Rayfield:Notify({
+                Stewfield:Notify({
                     Title = "Not Found",
                     Content = "BoxingGloves not found. Did you use the Chimney TP first?",
                     Duration = 4,
@@ -95,7 +95,7 @@ BoxerTab:CreateButton({
                 })
             end
         else
-            Rayfield:Notify({
+            Stewfield:Notify({
                 Title = "Wrong Game",
                 Content = "You must be in Barzil to use this.",
                 Duration = 4,
