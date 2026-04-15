@@ -178,10 +178,10 @@ TrollingTab:CreateLabel("Instructions")
 TrollingTab:CreateParagraph({
     Title = "How to use",
     Content = "• Equip the Swapper glove in the lobby.\n" ..
-              "• Enter the arena first.\n" ..
-              "• Set the amount of times you wish to loop the teleport.\n" ..
-              "• Enable 'Swapper Trolling' to begin.\n" ..
-              "• The script turns off automatically if you finish or return to lobby."
+              "• Set the amount of times you wish to loop the troll.\n" ..
+              "• Enter the arena and turn on 'Swapper Trolling' to begin.\n" ..
+              "• Once the script is finished you will be reset to prevent bans.\n" ..
+              "• The script stops when you finish or return to the lobby."
 })
 
 return TrollingTab
