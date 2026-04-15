@@ -51,11 +51,26 @@ local function RunTrollLogic()
     if not char then return end
     
     local _, glove = getStats()
-    
-    -- Ownership/Equip Check
-    if glove ~= "Swapper" then
+    local LobbyPath = Workspace:FindFirstChild(LocalPlayer.Name) and Workspace[LocalPlayer.Name]:FindFirstChild("InLobby")
+
+    -- 1. Arena Check (Ensures you are not in the lobby)
+    if LobbyPath then
+        TrollingActive = false
         if TrollingToggle then TrollingToggle:Set(false) end
-         Stewfield:Notify({
+        Stewfield:Notify({
+            Title = "Arena Required",
+            Content = "Please enter the arena before turning this on!",
+            Duration = 5,
+            Image = "circle-alert"
+        })
+        return
+    end
+    
+    -- 2. Ownership/Equip Check
+    if glove ~= "Swapper" then
+        TrollingActive = false
+        if TrollingToggle then TrollingToggle:Set(false) end
+        Stewfield:Notify({
             Title = "Glove Required",
             Content = "You must have Swapper equipped to use this!",
             Duration = 5,
@@ -64,59 +79,49 @@ local function RunTrollLogic()
         return
     end
 
-    -- Movement to Portal
-    local portal = Workspace.Lobby:FindFirstChild("Teleport1")
-    if portal and char:FindFirstChild("Humanoid") then
-        char.Humanoid:MoveTo(portal.Position)
+    -- 3. Execution Loop
+    task.wait(0.5)
+
+    local cubePath = Workspace.Arena.CubeOfDeathArea:FindFirstChild("the cube of death(i heard it kills)")
+    local remote = ReplicatedStorage:WaitForChild("SLOC", 5)
+    local rootPart = char:FindFirstChild("HumanoidRootPart")
+
+    for i = 1, TrollCount do
+        if not TrollingActive then break end
         
-        -- Wait for teleport
-        repeat task.wait(0.1) until (char:FindFirstChild("InLobby") == nil) or not TrollingActive
-        
-        if not TrollingActive then return end
-        task.wait(0.5)
-
-        -- Execution Loop
-        local cubePath = Workspace.Arena.CubeOfDeathArea:FindFirstChild("the cube of death(i heard it kills)")
-        local remote = ReplicatedStorage:WaitForChild("SLOC", 5)
-        local rootPart = char:FindFirstChild("HumanoidRootPart")
-
-        for i = 1, TrollCount do
-            if not TrollingActive then break end
-            
-            if cubePath and rootPart then
-                -- Disable Kill Part
-                cubePath.CanTouch = false
-                if cubePath:FindFirstChild("Part") then
-                    cubePath.Part.CanTouch = false
-                end
-
-                -- Teleport
-                rootPart.CFrame = cubePath.CFrame * CFrame.new(0, 5, 0)
-                task.wait(0.5)
-
-                -- Fire Remote
-                if remote then
-                    remote:FireServer()
-                end
+        if cubePath and rootPart then
+            -- Disable Kill Part
+            cubePath.CanTouch = false
+            if cubePath:FindFirstChild("Part") then
+                cubePath.Part.CanTouch = false
             end
 
-            if i < TrollCount then
-                task.wait(7)
+            -- Teleport
+            rootPart.CFrame = cubePath.CFrame * CFrame.new(0, 5, 0)
+            task.wait(0.5)
+
+            -- Fire Remote
+            if remote then
+                remote:FireServer()
             end
         end
+
+        if i < TrollCount then
+            task.wait(7)
+        end
+    end
+    
+    -- Finish Tasks: Reset and turn off toggle
+    if TrollingActive then
+        TrollingActive = false
+        if TrollingToggle then TrollingToggle:Set(false) end
         
-        -- Finish Tasks: Reset and turn off toggle
-        if TrollingActive then
-            TrollingActive = false
-            if TrollingToggle then TrollingToggle:Set(false) end
-            
-            -- Reset Character after finishing iterations
-            if ResetRemote then
-                ResetRemote:FireServer()
-            else
-                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-                    LocalPlayer.Character.Humanoid.Health = 0
-                end
+        -- Reset Character after finishing iterations
+        if ResetRemote then
+            ResetRemote:FireServer()
+        else
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                LocalPlayer.Character.Humanoid.Health = 0
             end
         end
     end
@@ -173,10 +178,10 @@ TrollingTab:CreateLabel("Instructions")
 TrollingTab:CreateParagraph({
     Title = "How to use",
     Content = "• Equip the Swapper glove in the lobby.\n" ..
+              "• Enter the arena first.\n" ..
               "• Set the amount of times you wish to loop the teleport.\n" ..
               "• Enable 'Swapper Trolling' to begin.\n" ..
-              "• The script turns off automatically if you die or finish the tasks.\n" ..
-              "• Manual disable will reset your character."
+              "• The script turns off automatically if you finish or return to lobby."
 })
 
 return TrollingTab
