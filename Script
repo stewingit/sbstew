@@ -25,7 +25,7 @@ g.sbstew_Stewfield = Stewfield
 local Window = Stewfield:CreateWindow({
     Name = "Slap Battle Stew",
     Icon = "hand",
-    LoadingTitle = "SBStew",
+    LoadingTitle = "SBstew",
     SettingsId = "sbstew", 
 })
 
@@ -49,14 +49,21 @@ local function loadTab(url, name)
 end
 
 --- 5. Tab Loading Section ---
-local isLobby = getgenv().sbstew_Places["Lobby3"]
+local isLobby3 = getgenv().sbstew_Places["Lobby3"]
+local isLobby2 = getgenv().sbstew_Places["Lobby2"]
 local BadgeTab
 
-if isLobby then
+if isLobby3 then
     loadTab("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Info")
     
     BadgeTab = Window:CreateTab("Badges", "medal")
     BadgeTab:CreateLabel("Select a badge glove to load its tab")
+end
+
+if isLobby2 then
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Farming"))()
+    
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Trolling"))()
 end
 
 local function handleGlove(name, locations, url)
