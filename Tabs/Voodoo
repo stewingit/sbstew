@@ -1,0 +1,247 @@
+-- VOODOO GLOVE TAB SCRIPT
+local Stewfield = getgenv().sbstew_Stewfield
+local Window = getgenv().sbstew_Window
+local Places = getgenv().sbstew_Places
+
+local LocalPlayer = game:GetService("Players").LocalPlayer
+
+-- Create Tab
+local VoodooTab = Window:CreateTab("Voodoo Glove", "skull")
+VoodooTab:CreateLabel("Voodoo Glove Buttons")
+
+-- Helper: Get Slaps
+local function getStats()
+    local stats = LocalPlayer:FindFirstChild("leaderstats")
+    local slaps = (stats and stats:FindFirstChild("Slaps")) and stats.Slaps.Value or 0
+    return slaps
+end
+
+-- 1. Equip Voodoo Glove
+VoodooTab:CreateButton({
+    Name = "Equip Voodoo",
+    Callback = function()
+        local LobbyPath = Workspace:FindFirstChild(LocalPlayer.Name) 
+            and Workspace[LocalPlayer.Name]:FindFirstChild("InLobby")
+
+        if LobbyPath then
+            if getStats() >= 666 then
+                local GloveObj = Workspace.Lobby:WaitForChild("Voodoo", 2)
+                if GloveObj then
+                    fireclickdetector(GloveObj:FindFirstChildOfClass("ClickDetector"))
+                end
+            else
+                Stewfield:Notify({
+                    Title = "Insufficient Slaps",
+                    Content = "You need 666 slaps to equip Voodoo!",
+                    Duration = 5,
+                    Image = "lock"
+                })
+            end
+        else
+            Stewfield:Notify({
+                Title = "Error",
+                Content = "Make sure you're in the lobby.",
+                Duration = 5,
+                Image = "circle-alert"
+            })
+        end
+    end,
+})
+
+-- 2. Teleport to Safe Spot
+local function Create(InstanceType, Properties, Children)
+    local obj = Instance.new(InstanceType)
+    for prop, val in pairs(Properties) do
+        obj[prop] = val
+    end
+    if Children then
+        for _, child in ipairs(Children) do
+            child.Parent = obj
+        end
+    end
+    obj.Parent = Properties.Parent
+    return obj
+end
+
+VoodooTab:CreateButton({
+    Name = "Teleport to Safe Spot",
+    Callback = function()
+        -- SafeSpotSpace
+        if not workspace:FindFirstChild("SafeBoxSpace") then
+            Create("Part", {
+                Name = "SafeBoxSpace",
+                Anchored = true,
+                CanCollide = true,
+                Transparency = 0.5,
+                Position = Vector3.new(0, 15000, 0),
+                Size = Vector3.new(150, 5, 150),
+                Parent = workspace
+            })
+        end
+
+        -- SafeBox
+        if not workspace:FindFirstChild("SafeBox") then
+            local SafeBox = Create("Part", {
+                Name = "SafeBox",
+                Anchored = true,
+                CanCollide = true,
+                Transparency = 0.5,
+                Position = Vector3.new(-5500, -5000, -5000),
+                Size = Vector3.new(21, 5, 21),
+                Parent = workspace
+            }, {
+                Create("Part", {
+                    Name = "S1",
+                    Anchored = true,
+                    CanCollide = true,
+                    Transparency = 0.5,
+                    Position = Vector3.new(-5499.91, -4991.5, -4989.09),
+                    Size = Vector3.new(20, 13, 2)
+                }),
+                Create("Part", {
+                    Name = "S2",
+                    Anchored = true,
+                    CanCollide = true,
+                    Transparency = 0.5,
+                    Size = Vector3.new(21, 14, 2),
+                    CFrame = CFrame.new(-5510.27979, -4991.5, -5000.08984) * CFrame.Angles(0, math.rad(-90), 0),
+                }),
+                Create("Part", {
+                    Name = "S3",
+                    Anchored = true,
+                    CanCollide = true,
+                    Transparency = 0.5,
+                    Position = Vector3.new(-5499.3, -4991.5, -5011.12),
+                    Size = Vector3.new(21, 13, 2)
+                }),
+                Create("Part", {
+                    Name = "S4",
+                    Anchored = true,
+                    CanCollide = true,
+                    Transparency = 0.5,
+                    Size = Vector3.new(22, 13, 2),
+                    CFrame = CFrame.new(-5489.97559, -4991.5, -4999.52637) * CFrame.Angles(0, math.rad(-90), 0)
+                }),
+                Create("Part", {
+                    Name = "S5",
+                    Anchored = true,
+                    CanCollide = true,
+                    Transparency = 0.5,
+                    Position = Vector3.new(-5499.39, -4984, -5000.07),
+                    Size = Vector3.new(24, 3, 24)
+                })
+            })
+
+            for _, v in ipairs(workspace.SafeBox:GetChildren()) do
+                if v:IsA("BasePart") and v ~= workspace.SafeBox then
+                    Create("WeldConstraint", {
+                        Part0 = workspace.SafeBox,
+                        Part1 = v,
+                        Name = v.Name.." (Weld)",
+                        Parent = workspace.SafeBox
+                    })
+                    v.Anchored = false
+                end
+            end
+        end
+
+        -- Walk to portal
+        local Hum = LocalPlayer.Character:WaitForChild("Humanoid")
+        Hum:MoveTo(Workspace.Lobby.Teleport1.Position)
+        task.wait(1.5)
+
+        -- Teleport into SafeBox
+        LocalPlayer.Character.HumanoidRootPart.CFrame = workspace.SafeBox.CFrame * CFrame.new(0, 5, 0)
+    end,
+})
+
+-- 3. Begin (Fire Ability)
+local startTime = nil
+
+VoodooTab:CreateButton({
+    Name = "Begin",
+    Callback = function()
+        startTime = tick()
+
+        local args = {}
+        game:GetService("ReplicatedStorage"):WaitForChild("Ghostinvisibilityactivated"):FireServer(unpack(args))
+
+        Stewfield:Notify({
+            Title = "Ability Activated",
+            Content = "Voodoo invisibility started.",
+            Duration = 4,
+            Image = "check"
+        })
+    end,
+})
+
+-- 4. Anti-AFK Toggle
+local AntiAFKConnection
+local AntiAFKToggle = VoodooTab:CreateToggle({
+    Name = "Anti-Disconnect",
+    CurrentValue = false,
+    Flag = "AntiAFK_Flag",
+    Callback = function(Value)
+        if Value then
+            local VirtualUser = game:GetService("VirtualUser")
+            AntiAFKConnection = LocalPlayer.Idled:Connect(function()
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new())
+            end)
+        else
+            if AntiAFKConnection then
+                AntiAFKConnection:Disconnect()
+                AntiAFKConnection = nil
+            end
+        end
+    end,
+})
+
+-- 5. Instructions
+VoodooTab:CreateParagraph({
+    Title = "Instructions",
+    Content = 
+        "1. Equip Voodoo (requires 666 slaps).\n" ..
+        "2. Teleport to Safe Spot.\n" ..
+        "3. Press 'Begin' to activate invisibility.\n" ..
+        "4. Use 'Check Time Remaining' to track your hour.\n" ..
+        "5. Enable Anti-Disconnect to stay safe."
+})
+
+-- 6. Check Time Remaining
+VoodooTab:CreateButton({
+    Name = "Check Time Remaining",
+    Callback = function()
+        if startTime == nil then
+            Stewfield:Notify({
+                Title = "Timer Not Started",
+                Content = "You must press 'Begin' first!",
+                Duration = 3,
+                Image = "circle-alert"
+            })
+        else
+            local timeElapsed = tick() - startTime
+            local timeLeft = 3600 - timeElapsed
+
+            if timeLeft <= 0 then
+                Stewfield:Notify({
+                    Title = "Time Up!",
+                    Content = "The hour is up! You should get the badge now or very soon.",
+                    Duration = 3,
+                    Image = "hourglass"
+                })
+            else
+                local minutes = math.floor(timeLeft / 60)
+                local seconds = math.floor(timeLeft % 60)
+                Stewfield:Notify({
+                    Title = "Time Remaining",
+                    Content = string.format("Remaining: %d minutes and %d seconds", minutes, seconds),
+                    Duration = 5,
+                    Image = "hourglass"
+                })
+            end
+        end
+    end,
+})
+
+return VoodooTab
