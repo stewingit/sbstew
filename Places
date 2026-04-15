@@ -8,6 +8,7 @@ getgenv().sbstew_Places = {
     ["Barzil"]      = (currentPlaceId == 7234087065),
     ["UTG_Obby"]    = (currentPlaceId == 115782629143468),
     ["Application"] = (currentPlaceId == 16034567693),
+    ["Plate"] = (currentPlaceId == 106620300132058),
 }
 
 getgenv().sbstew_LoadedAnyTab = false 
