@@ -27,7 +27,7 @@ local Animation = nil
 local HasSlapped = false
 
 local BombTab = Window:CreateTab("Bomb Glove", "Bomb")
-BombTab:CreateLabel("Bomb Glove Obtainment (Needs Warp)")
+BombTab:CreateLabel("Bomb Glove Obtainment")
 
 local function CharacterLoaded(Character)
     local Humanoid = Character:WaitForChild("Humanoid", 10)
@@ -56,7 +56,6 @@ local function GetTarget(LocalHumanoid)
                     local Distance = (LocalHumanoid.RootPart.Position - Root.Position).Magnitude
                     local InMap = (Root.Position - ZeroPosition).Magnitude < RoamRange
                     
-                    -- Advanced Filters
                     local InLobby = Character:FindFirstChild("InLobby")
                     local Rock = Character:FindFirstChild("rock")
                     local Reverse = Character:FindFirstChild("Reversed")
@@ -112,12 +111,12 @@ local function StartBombLoop()
                 
                 -- 3. ABILITY & BARRIER
                 else
-                    task.wait(2) -- Wait 2 seconds after slap
+                    task.wait(2)
                     
                     -- Fire Ability
                     AbilityRemote:FireServer({})
                     
-                    task.wait(0.1) -- Wait 0.1 seconds
+                    task.wait(0.1)
                     
                     -- Instant Death Barrier Touch
                     local leg = Character:FindFirstChild("Left Leg") or LocalHumanoid.RootPart
@@ -137,38 +136,69 @@ local function StartBombLoop()
                     LocalHumanoid.WalkSpeed = BotSpeed
                 end
             end
-            RunService.RenderStepped:Wait()
+            RunService.Heartbeat:Wait()
         end
     end)
 end
 
 BombTab:CreateButton({
-    Name = "Get Bomb",
+    Name = "Equip Warp glove",
     Callback = function()
+        local LobbyPath = Workspace:FindFirstChild(LocalPlayer.Name) and Workspace[LocalPlayer.Name]:FindFirstChild("InLobby")
         local unlocked = LocalPlayer:FindFirstChild("_unlockedGloves")
         local hasWarp = unlocked and unlocked:FindFirstChild("Warp") and unlocked.Warp.Value == true
 
-        if not hasWarp then
+        if LobbyPath then
+            if hasWarp then
+                local GloveObj = Workspace.Lobby:WaitForChild("Warp", 2)
+                if GloveObj then
+                    fireclickdetector(GloveObj:FindFirstChildOfClass("ClickDetector"))
+                end
+            else
+                Stewfield:Notify({
+                    Title = "Missing Requirement",
+                    Content = "You need the Warp glove unlocked first!",
+                    Duration = 5,
+                    Image = "lock"
+                })
+            end
+        else
             Stewfield:Notify({
-                Title = "Missing Requirement",
-                Content = "You need the Warp glove unlocked first!",
-                Duration = 3,
+                Title = "Error",
+                Content = "Make sure you're in the lobby.",
+                Duration = 5,
+                Image = "circle-alert"
+            })
+        end
+    end,
+})
+
+BombTab:CreateButton({
+    Name = "Get Bomb",
+    Callback = function()
+        local stats = LocalPlayer:FindFirstChild("leaderstats")
+        local currentGlove = (stats and stats:FindFirstChild("Glove")) and stats.Glove.Value or "None"
+
+        if currentGlove == "Warp" then
+            getgenv().BSF_Bomb = true
+            if LocalPlayer.Character then
+                CharacterLoaded(LocalPlayer.Character)
+                StartBombLoop()
+            end
+        else
+            Stewfield:Notify({
+                Title = "Glove Required",
+                Content = "You must have the Warp glove equipped first!",
+                Duration = 5,
                 Image = "lock"
             })
-            return
-        end
-
-        getgenv().BSF_Bomb = true
-        if LocalPlayer.Character then
-            CharacterLoaded(LocalPlayer.Character)
-            StartBombLoop()
         end
     end,
 })
 
 BombTab:CreateParagraph({
     Title = "Instructions",
-    Content = "1. Press 'Get Bomb' to run the bot once, if you don't have Warp the bot won't run."
+    Content = "1. Press 'Equip Warp glove'\n2. Press 'Get Bomb' to start the bot."
 })
 
 return BombTab
