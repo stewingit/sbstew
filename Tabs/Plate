@@ -1,0 +1,146 @@
+-- PLATE GLOVE TAB SCRIPT
+local Stewfield = getgenv().sbstew_Stewfield
+local Window = getgenv().sbstew_Window
+local Places = getgenv().sbstew_Places
+
+-- Create Tab
+local PlateTab = Window:CreateTab("Plate Glove", "disc")
+PlateTab:CreateLabel("Plate Glove Buttons")
+
+-- 1. Go to Plate Place Button
+local slappingActive = false
+PlateTab:CreateButton({
+    Name = "Go to plate place",
+    Callback = function()
+        if Places["Lobby3"] then    
+            local character = game.Players.LocalPlayer.Character
+            local hum = character:FindFirstChildOfClass("Humanoid")
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            local target = workspace.Arena.Plate
+            
+            if hum then
+                hum:MoveTo(workspace.Lobby.Teleport1.Position)
+            end
+            
+            task.wait(0.5)
+            
+            if rootPart and hum and target then
+                hum:ChangeState(Enum.HumanoidStateType.Jumping)
+                task.wait(0.05)
+                rootPart.CFrame = target.CFrame
+            end
+            
+            -- Start Auto Slapping Logic
+            slappingActive = true
+            Stewfield:Notify({
+                Title = "Auto Slap",
+                Content = "Started slapping the plate sign...",
+                Duration = 3,
+                Image = "info",
+            })
+            
+            task.spawn(function()
+                while slappingActive do
+                    local char = game.Players.LocalPlayer.Character
+                    if char then
+                        local tool = char:FindFirstChildOfClass("Tool")
+                        if tool then
+                            tool:Activate()
+                        end
+                    end
+                    task.wait(0.1)
+                end
+            end)
+        else
+            Stewfield:Notify({
+                Title = "Wrong Game",
+                Content = "You must be in the Slap Battles Lobby to use this.",
+                Duration = 4,
+                Image = "circle-alert",
+            })
+        end
+    end,
+})
+
+-- 2. Delete Obstacles Button
+PlateTab:CreateButton({
+    Name = "Delete all obstacles",
+    Callback = function()
+        if Places["Plate"] then
+            if workspace:FindFirstChild("Obstacles") then 
+                workspace.Obstacles:Destroy() 
+                Stewfield:Notify({
+                    Title = "Success",
+                    Content = "All obstacles removed!",
+                    Duration = 3,
+                    Image = "check",
+                })
+            end
+            
+            task.spawn(function()
+                local connection
+                connection = workspace:GetAttributeChangedSignal("Completed"):Connect(function()
+                    if workspace:GetAttribute("Completed") == true then
+                        Stewfield:Notify({
+                            Title = "Notification",
+                            Content = "Done",
+                            Duration = 5,
+                            Image = "check",
+                        })
+                        connection:Disconnect()
+                    end
+                end)
+            end)
+        else
+            Stewfield:Notify({
+                Title = "Wrong Game",
+                Content = "You must be in the Plate obtainment place to use this.",
+                Duration = 4,
+                Image = "circle-alert",
+            })
+        end
+    end,
+})
+
+-- 3. Go to Glove Button
+PlateTab:CreateButton({
+    Name = "Go to glove",
+    Callback = function()
+        if Places["Plate"] then
+            local character = game.Players.LocalPlayer.Character
+            local target = workspace:FindFirstChild("Glove Model") and workspace["Glove Model"]:FindFirstChild("Hand")
+            
+            if target then
+                local rootPart = character:FindFirstChild("HumanoidRootPart")
+                local hum = character:FindFirstChildOfClass("Humanoid")
+                
+                if rootPart and hum then
+                    hum:ChangeState(Enum.HumanoidStateType.Jumping)
+                    task.wait(0.05)
+                    rootPart.CFrame = target.CFrame
+                end
+            else
+                Stewfield:Notify({
+                    Title = "Not Spawned",
+                    Content = "The glove has not spawned yet!",
+                    Duration = 4,
+                    Image = "circle-alert",
+                })
+            end
+        else
+            Stewfield:Notify({
+                Title = "Wrong Game",
+                Content = "You must be in the Plate place to use this.",
+                Duration = 4,
+                Image = "circle-alert",
+            })
+        end
+    end,
+})
+
+PlateTab:CreateParagraph({
+    Title = "Instructions",
+    Content = "1. Use 'Go to plate place' while in the Lobby.\n2. Once in the Plate place, use 'Delete all obstacles'.\n3. Wait for the 'Done' notification.\n4. Click 'Go to glove' to claim the badge."
+})
+
+return PlateTab
