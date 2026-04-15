@@ -238,10 +238,22 @@ WarpTab:CreateButton({
 WarpTab:CreateButton({
     Name = "Get Warp",
     Callback = function()
-        getgenv().BSF = true
-        if LocalPlayer.Character then
-            CharacterLoaded(LocalPlayer.Character)
-            StartLoops()
+        local stats = LocalPlayer:FindFirstChild("leaderstats")
+        local currentGlove = (stats and stats:FindFirstChild("Glove")) and stats.Glove.Value or "None"
+
+        if currentGlove == "Swapper" then
+            getgenv().BSF = true
+            if LocalPlayer.Character then
+                CharacterLoaded(LocalPlayer.Character)
+                StartLoops()
+            end
+        else
+            Stewfield:Notify({
+                Title = "Glove Required",
+                Content = "You must have the Swapper glove equipped first!",
+                Duration = 5,
+                Image = "lock"
+            })
         end
     end,
 })
