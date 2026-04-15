@@ -52,20 +52,33 @@ end
 local isLobby3 = getgenv().sbstew_Places["Lobby3"]
 local isLobby2 = getgenv().sbstew_Places["Lobby2"]
 local BadgeTab
+local MiscTab
 
 -- Load Info first
-if isLobby3 then
+if isLobby3 or isLobby2 then
     loadTab("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Info")
 end
 
 BadgeTab = Window:CreateTab("Badges", "medal")
 BadgeTab:CreateLabel("Select a badge glove to load its tab")
 
-local function handleGlove(name, locations, url)
+-- Misc Tab for Lobby 2 or 3
+if isLobby3 or isLobby2 then
+    MiscTab = Window:CreateTab("Misc", "copy-plus")
+    MiscTab:CreateLabel("Misc Features")
+    MiscTab:CreateParagraph({
+        Title = "Prevent Loading Lag",
+        Content = "This tab is to prevent loading lag, press the below buttons to open up more tabs and amazing features! NOTE: Some tabs may take a very long time to load, this is exactly why they're here. Just wait a few seconds"
+    })
+end
+
+-- Unified Handle Function (Added destroyOnClick parameter)
+local function handleTab(parentTab, name, locations, url, destroyOnClick)
     if shouldLoad(locations) then
         getgenv().sbstew_LoadedAnyTab = true 
 
-        BadgeTab:CreateButton({
+        local NewButton
+        NewButton = parentTab:CreateButton({
             Name = name,
             Callback = function()
                 if not createdTabs[name] then
@@ -74,6 +87,11 @@ local function handleGlove(name, locations, url)
                         createdTabs[name] = newTab
                     end
                 end
+                
+                -- Destroy logic for Misc Tab only
+                if destroyOnClick and NewButton then
+                    NewButton:Destroy()
+                end
             end,
         })
     end
@@ -81,20 +99,18 @@ end
 
 getgenv().sbstew_LoadedAnyTab = false
 
---- 6. Badge Glove Buttons ---
-handleGlove("Admin", {"Lobby3", "Application"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Admin")
-handleGlove("Bomb", {"Lobby2"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Bomb")
-handleGlove("Boxer", {"Lobby3", "Barzil"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Boxer")
-handleGlove("Plate", {"Lobby3", "Plate"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Plate")
-handleGlove("UTG", {"Lobby3", "Barzil", "UTG_Obby"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/UTG")
-handleGlove("Voodoo", {"Lobby2"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Voodoo")
-handleGlove("Warp", {"Lobby2"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Warp")
+-- 6. Misc Buttons
+handleTab(MiscTab, "Farming", {"Lobby2"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Farming", true)
+handleTab(MiscTab, "Trolling", {"Lobby2"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Trolling", true)
 
---- 7. Post-Badge Tabs (Lobby2 Specific) ---
-if isLobby2 then
-    loadTab("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Farming")
-    loadTab("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Trolling")
-end
+-- 7. Badge Glove Buttons
+handleTab(BadgeTab, "Admin", {"Lobby3", "Application"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Admin", false)
+handleTab(BadgeTab, "Bomb", {"Lobby2"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Bomb", false)
+handleTab(BadgeTab, "Boxer", {"Lobby3", "Barzil"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Boxer", false)
+handleTab(BadgeTab, "Plate", {"Lobby3", "Plate"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Plate", false)
+handleTab(BadgeTab, "UTG", {"Lobby3", "Barzil", "UTG_Obby"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/UTG", false)
+handleTab(BadgeTab, "Voodoo", {"Lobby2"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Voodoo", false)
+handleTab(BadgeTab, "Warp", {"Lobby2"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Warp", false)
 
 -- Check if anything loaded
 if not getgenv().sbstew_LoadedAnyTab and not isLobby2 and not isLobby3 then
