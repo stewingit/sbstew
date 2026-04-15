@@ -20,9 +20,11 @@ PlateTab:CreateButton({
             
             if hum then
                 hum:MoveTo(workspace.Lobby.Teleport1.Position)
+                task.wait(0.3)
+                hum:MoveTo(rootPart.Position)
             end
             
-            task.wait(0.5)
+            task.wait(1)
             
             if rootPart and hum and target then
                 hum:ChangeState(Enum.HumanoidStateType.Jumping)
@@ -30,7 +32,9 @@ PlateTab:CreateButton({
                 rootPart.CFrame = target.CFrame
             end
             
-            -- Start Auto Slapping Logic
+            task.wait(1)
+            
+            -- Start Auto Slapping
             slappingActive = true
             Stewfield:Notify({
                 Title = "Auto Slap",
