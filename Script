@@ -92,6 +92,7 @@ getgenv().sbstew_LoadedAnyTab = false
 handleGlove("Admin", {"Lobby3", "Application"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Admin")
 handleGlove("Bomb", {"Lobby2"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Bomb")
 handleGlove("Boxer", {"Lobby3", "Barzil"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Boxer")
+handleGlove("Plate", {"Lobby3", "Plate"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Plate")
 handleGlove("UTG", {"Lobby3", "Barzil", "UTG_Obby"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/UTG")
 handleGlove("Warp", {"Lobby2"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Warp")
 
