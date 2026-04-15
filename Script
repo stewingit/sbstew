@@ -53,43 +53,29 @@ local isLobby3 = getgenv().sbstew_Places["Lobby3"]
 local isLobby2 = getgenv().sbstew_Places["Lobby2"]
 local BadgeTab
 
+-- Load Info first
 if isLobby3 then
     loadTab("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Info")
-    
-    BadgeTab = Window:CreateTab("Badges", "medal")
-    BadgeTab:CreateLabel("Select a badge glove to load its tab")
 end
 
-if isLobby2 then
-    loadTab("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Farming")
-    
-    loadTab("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Trolling")
-end
+BadgeTab = Window:CreateTab("Badges", "medal")
+BadgeTab:CreateLabel("Select a badge glove to load its tab")
 
 local function handleGlove(name, locations, url)
     if shouldLoad(locations) then
         getgenv().sbstew_LoadedAnyTab = true 
-        
-        if isLobby then
-            BadgeTab:CreateButton({
-                Name = name,
-                Callback = function()
-                    if not createdTabs[name] then
-                        local newTab = loadTab(url, name)
-                        if newTab and typeof(newTab) == "table" then
-                            createdTabs[name] = newTab
-                        end
+
+        BadgeTab:CreateButton({
+            Name = name,
+            Callback = function()
+                if not createdTabs[name] then
+                    local newTab = loadTab(url, name)
+                    if newTab and typeof(newTab) == "table" then
+                        createdTabs[name] = newTab
                     end
-                end,
-            })
-        else
-            if not createdTabs[name] then
-                local newTab = loadTab(url, name)
-                if newTab then
-                    createdTabs[name] = newTab
                 end
-            end
-        end
+            end,
+        })
     end
 end
 
@@ -104,8 +90,14 @@ handleGlove("UTG", {"Lobby3", "Barzil", "UTG_Obby"}, "https://raw.githubusercont
 handleGlove("Voodoo", {"Lobby2"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Voodoo")
 handleGlove("Warp", {"Lobby2"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Warp")
 
+--- 7. Post-Badge Tabs (Lobby2 Specific) ---
+if isLobby2 then
+    loadTab("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Farming")
+    loadTab("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Trolling")
+end
+
 -- Check if anything loaded
-if not getgenv().sbstew_LoadedAnyTab then
+if not getgenv().sbstew_LoadedAnyTab and not isLobby2 and not isLobby3 then
     local ErrorTab = Window:CreateTab("Unsupported", "circle-alert")
     ErrorTab:CreateParagraph({
         Title = "Unsupported Experience",
