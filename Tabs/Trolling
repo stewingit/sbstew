@@ -1,53 +1,34 @@
-local TrollingTab = getgenv().sbstew_Window:CreateTab("Trolling", "laugh")
 local Stewfield = getgenv().sbstew_Stewfield
+local Window = getgenv().sbstew_Window
 
--- Services
 local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local MarketPlaceService = game:GetService("MarketplaceService")
 
-local LocalPlayer = Players.LocalPlayer
-local ResetRemote = ReplicatedStorage:WaitForChild("SelfDestruct", 5) or ReplicatedStorage:WaitForChild("Reset", 5)
-
--- State Variables
+-- Configuration & State
 local TrollCount = 1
 local TrollingActive = false
 local SelectedTroll = "cube of death"
+local ResetRemote = ReplicatedStorage:WaitForChild("SelfDestruct", 5) or ReplicatedStorage:WaitForChild("Reset", 5)
 
-TrollingTab:CreateLabel("Swapper Trolling")
+-- Helper logic for Stats
+local function getStats()
+    local stats = LocalPlayer:FindFirstChild("leaderstats")
+    local slaps = (stats and stats:FindFirstChild("Slaps")) and stats.Slaps.Value or 0
+    local currentGlove = (stats and stats:FindFirstChild("Glove")) and stats.Glove.Value or "None"
+    return slaps, currentGlove
+end
 
--- Slider for Iterations
-TrollingTab:CreateSlider({
-    Name = "Amount of Trolls",
-    Range = {1, 50},
-    Increment = 1,
-    Suffix = " Times",
-    CurrentValue = 1,
-    Callback = function(Value)
-        TrollCount = Value
-    end,
-})
-
--- Dropdown for Selection
-TrollingTab:CreateDropdown({
-    Name = "Type",
-    Options = {"cube of death"},
-    CurrentOption = "cube of death",
-    MultipleOptions = false,
-    Callback = function(Option)
-        SelectedTroll = Option[1]
-    end,
-})
-
--- The Main Logic Function
+-- Main Logic Function
 local function RunTrollLogic()
     local char = LocalPlayer.Character
     if not char then return end
     
-    local stats = LocalPlayer:FindFirstChild("leaderstats")
-    local glove = (stats and stats:FindFirstChild("Glove")) and stats.Glove.Value or ""
+    local _, glove = getStats()
     
-    -- 1. Check
+    -- Ownership/Equip Check
     if glove ~= "Swapper" then
         Stewfield:Notify({
             Title = "Glove Required",
@@ -58,28 +39,24 @@ local function RunTrollLogic()
         return
     end
 
-    -- 2. Walk to Portal
+    -- Movement to Portal
     local portal = Workspace.Lobby:FindFirstChild("Teleport1")
     if portal and char:FindFirstChild("Humanoid") then
         char.Humanoid:MoveTo(portal.Position)
         
-        -- 3. Wait for Touch Interest / Teleport
+        -- Wait for teleport
         repeat task.wait(0.1) until (char:FindFirstChild("InLobby") == nil) or not TrollingActive
         
         if not TrollingActive then return end
-        
-        -- 4. Initial Delay before Script
         task.wait(0.5)
 
-        -- 5. Execute your Cube of Death Script
+        -- Execution Loop
         local cubePath = Workspace.Arena.CubeOfDeathArea:FindFirstChild("the cube of death(i heard it kills)")
         local remote = ReplicatedStorage:WaitForChild("SLOC", 5)
         local rootPart = char:FindFirstChild("HumanoidRootPart")
 
         for i = 1, TrollCount do
             if not TrollingActive then break end
-            
-            print("Troll Cycle: " .. i)
             
             if cubePath and rootPart then
                 -- Disable Kill Part
@@ -105,7 +82,33 @@ local function RunTrollLogic()
     end
 end
 
--- Toggle to Start/Stop
+-- Tab Creation
+local TrollingTab = Window:CreateTab("Trolling", "laugh")
+
+TrollingTab:CreateLabel("Swapper Trolling")
+
+-- UI Components
+TrollingTab:CreateDropdown({
+    Name = "Type",
+    Options = {"cube of death"},
+    CurrentOption = "cube of death",
+    MultipleOptions = false,
+    Callback = function(Option)
+        SelectedTroll = Option[1]
+    end,
+})
+
+TrollingTab:CreateSlider({
+    Name = "Amount of Trolls",
+    Range = {1, 50},
+    Increment = 1,
+    Suffix = " Times",
+    CurrentValue = 1,
+    Callback = function(Value)
+        TrollCount = Value
+    end,
+})
+
 TrollingTab:CreateToggle({
     Name = "Swapper Trolling",
     CurrentValue = false,
@@ -124,9 +127,17 @@ TrollingTab:CreateToggle({
                     LocalPlayer.Character.Humanoid.Health = 0
                 end
             end
-            print("Trolling Stopped. Character Reset.")
         end
     end,
+})
+
+TrollingTab:CreateLabel("Instructions")
+TrollingTab:CreateParagraph({
+    Title = "How to use",
+    Content = "• Equip the Swapper glove in the lobby.\n" ..
+              "• Set the amount of times you wish to loop the teleport.\n" ..
+              "• Enable 'Swapper Trolling' to begin the automation.\n" ..
+              "• Disabling the toggle will reset your character and stop the script."
 })
 
 return TrollingTab
