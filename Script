@@ -35,7 +35,6 @@ g.sbstew_Window = Window
 loadstring(game:HttpGet("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Places"))()
 
 local createdTabs = {}
-local ownedSection, notOwnedSection
 
 local function loadTab(url, name)
     local success, result = pcall(function()
@@ -58,38 +57,29 @@ if isLobby then
     
     BadgeTab = Window:CreateTab("Badges", "medal")
     BadgeTab:CreateLabel("Select a badge glove to load its tab")
-    
-    -- Create the requested sections
-    ownedSection = BadgeTab:CreateSection("Owned")
-    notOwnedSection = BadgeTab:CreateSection("Not Yet Owned")
 end
 
-local function handleGlove(name, locations, url)
+local function handleGlove(name, locations, url, filterOwned)
     if shouldLoad(locations) then
         getgenv().sbstew_LoadedAnyTab = true 
         
         if isLobby then
-            -- Ownership Check logic
             local unlocked = LocalPlayer:FindFirstChild("_unlockedGloves")
             local isOwned = unlocked and unlocked:FindFirstChild(name) and unlocked[name].Value == true
             
-            -- Choose target section based on ownership
-            local targetSection = isOwned and ownedSection or notOwnedSection
-            
-            -- Buttons are created via Tab, but assigned to a Section
-            BadgeTab:CreateButton({
-                Name = name,
-                SectionParent = targetSection, -- Fixed: Parent the button to the section via Tab
-                Callback = function()
-                    -- Check if tab was already created to prevent duplication
-                    if not createdTabs[name] then
-                        local newTab = loadTab(url, name)
-                        if newTab and typeof(newTab) == "table" then
-                            createdTabs[name] = newTab
+            if isOwned == filterOwned then
+                BadgeTab:CreateButton({
+                    Name = name,
+                    Callback = function()
+                        if not createdTabs[name] then
+                            local newTab = loadTab(url, name)
+                            if newTab and typeof(newTab) == "table" then
+                                createdTabs[name] = newTab
+                            end
                         end
-                    end
-                end,
-            })
+                    end,
+                })
+            end
         else
             if not createdTabs[name] then
                 local newTab = loadTab(url, name)
@@ -104,11 +94,32 @@ end
 getgenv().sbstew_LoadedAnyTab = false
 
 --- 6. Badge Glove Buttons ---
-handleGlove("Admin", {"Lobby3", "Application"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Admin")
-handleGlove("Bomb", {"Lobby2"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Bomb")
-handleGlove("Boxer", {"Lobby3", "Barzil"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Boxer")
-handleGlove("UTG", {"Lobby3", "Barzil", "UTG_Obby"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/UTG")
-handleGlove("Warp", {"Lobby2"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Warp")
+local gloves = {
+    {name = "Admin", loc = {"Lobby3", "Application"}, url = "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Admin"},
+    {name = "Bomb", loc = {"Lobby2"}, url = "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Bomb"},
+    {name = "Boxer", loc = {"Lobby3", "Barzil"}, url = "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Boxer"},
+    {name = "UTG", loc = {"Lobby3", "Barzil", "UTG_Obby"}, url = "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/UTG"},
+    {name = "Warp", loc = {"Lobby2"}, url = "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Warp"}
+}
+
+if isLobby then
+    -- Create Owned Section
+    BadgeTab:CreateLabel("Owned")
+    for _, gData in ipairs(gloves) do
+        handleGlove(gData.name, gData.loc, gData.url, true)
+    end
+
+    -- Create Not Owned Section
+    BadgeTab:CreateLabel("Not Yet Owned")
+    for _, gData in ipairs(gloves) do
+        handleGlove(gData.name, gData.loc, gData.url, false)
+    end
+else
+    -- Non-lobby loading
+    for _, gData in ipairs(gloves) do
+        handleGlove(gData.name, gData.loc, gData.url, nil)
+    end
+end
 
 -- Check if anything loaded
 if not getgenv().sbstew_LoadedAnyTab then
