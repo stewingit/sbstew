@@ -21,6 +21,33 @@ local function getStats()
     return slaps, currentGlove
 end
 
+-- Tab Creation
+local TrollingTab = Window:CreateTab("Trolling", "laugh")
+
+-- Death Handler Logic
+local function MonitorDeath(character)
+    local humanoid = character:WaitForChild("Humanoid", 10)
+    if humanoid then
+        humanoid.Died:Connect(function()
+            if TrollingActive then
+                TrollingActive = false
+                -- This visually updates the toggle in the UI and stops the loop logic
+                TrollingTab:Set({Flag = "TrollToggle", Value = false})
+                Stewfield:Notify({
+                    Title = "Script Stopped",
+                    Content = "Character died. Trolling disabled.",
+                    Duration = 3,
+                    Image = "skull"
+                })
+            end
+        end)
+    end
+end
+
+-- Initialize death monitoring for current and future characters
+if LocalPlayer.Character then task.spawn(MonitorDeath, LocalPlayer.Character) end
+LocalPlayer.CharacterAdded:Connect(MonitorDeath)
+
 -- Main Logic Function
 local function RunTrollLogic()
     local char = LocalPlayer.Character
@@ -30,6 +57,7 @@ local function RunTrollLogic()
     
     -- Ownership/Equip Check
     if glove ~= "Swapper" then
+        TrollingTab:Set({Flag = "TrollToggle", Value = false})
         Stewfield:Notify({
             Title = "Glove Required",
             Content = "You must have Swapper equipped to use this!",
@@ -82,9 +110,6 @@ local function RunTrollLogic()
     end
 end
 
--- Tab Creation
-local TrollingTab = Window:CreateTab("Trolling", "laugh")
-
 TrollingTab:CreateLabel("Swapper Trolling")
 
 -- UI Components
@@ -119,11 +144,12 @@ TrollingTab:CreateToggle({
         if TrollingActive then
             task.spawn(RunTrollLogic)
         else
-            -- Reset Character if turned off
-            if ResetRemote then
-                ResetRemote:FireServer()
-            else
-                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            -- Check if character is still alive before forcing a reset 
+            -- (prevents double-reset if the death handler already stopped it)
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") and LocalPlayer.Character.Humanoid.Health > 0 then
+                if ResetRemote then
+                    ResetRemote:FireServer()
+                else
                     LocalPlayer.Character.Humanoid.Health = 0
                 end
             end
@@ -137,7 +163,8 @@ TrollingTab:CreateParagraph({
     Content = "• Equip the Swapper glove in the lobby.\n" ..
               "• Set the amount of times you wish to loop the teleport.\n" ..
               "• Enable 'Swapper Trolling' to begin the automation.\n" ..
-              "• Disabling the toggle will reset your character and stop the script."
+              "• If you die, the script will automatically turn off.\n" ..
+              "• Manually disabling the toggle will reset your character."
 })
 
 return TrollingTab
