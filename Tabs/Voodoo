@@ -9,30 +9,33 @@ local LocalPlayer = game:GetService("Players").LocalPlayer
 local VoodooTab = Window:CreateTab("Voodoo Glove", "skull")
 VoodooTab:CreateLabel("Voodoo Glove Buttons")
 
--- Helper: Get Slaps
+-- Helper: Get Slaps and Glove
 local function getStats()
     local stats = LocalPlayer:FindFirstChild("leaderstats")
     local slaps = (stats and stats:FindFirstChild("Slaps")) and stats.Slaps.Value or 0
-    return slaps
+    local currentGlove = (stats and stats:FindFirstChild("Glove")) and stats.Glove.Value or "None"
+    return slaps, currentGlove
 end
 
--- 1. Equip Voodoo Glove
+-- 1. Equip Ghost Glove
 VoodooTab:CreateButton({
-    Name = "Equip Voodoo",
+    Name = "Equip Ghost",
     Callback = function()
         local LobbyPath = Workspace:FindFirstChild(LocalPlayer.Name) 
             and Workspace[LocalPlayer.Name]:FindFirstChild("InLobby")
 
+        local slaps, _ = getStats()
+
         if LobbyPath then
-            if getStats() >= 666 then
-                local GloveObj = Workspace.Lobby:WaitForChild("Voodoo", 2)
+            if slaps >= 666 then
+                local GloveObj = Workspace.Lobby:WaitForChild("Ghost", 2)
                 if GloveObj then
                     fireclickdetector(GloveObj:FindFirstChildOfClass("ClickDetector"))
                 end
             else
                 Stewfield:Notify({
                     Title = "Insufficient Slaps",
-                    Content = "You need 666 slaps to equip Voodoo!",
+                    Content = "You need 666 slaps to equip Ghost!",
                     Duration = 5,
                     Image = "lock"
                 })
@@ -66,6 +69,18 @@ end
 VoodooTab:CreateButton({
     Name = "Teleport to Safe Spot",
     Callback = function()
+        local _, currentGlove = getStats()
+        
+        if currentGlove ~= "Ghost" then
+            Stewfield:Notify({
+                Title = "Wrong Glove",
+                Content = "You must have Ghost equipped first!",
+                Duration = 5,
+                Image = "circle-alert"
+            })
+            return
+        end
+
         -- SafeSpotSpace
         if not workspace:FindFirstChild("SafeBoxSpace") then
             Create("Part", {
@@ -146,9 +161,25 @@ VoodooTab:CreateButton({
         end
 
         -- Walk to portal
-        local Hum = LocalPlayer.Character:WaitForChild("Humanoid")
-        Hum:MoveTo(Workspace.Lobby.Teleport1.Position)
-        task.wait(1.5)
+        local portal = Workspace.Lobby.Teleport1
+        local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+        local Hum = character:WaitForChild("Humanoid")
+        
+        Hum:MoveTo(portal.Position)
+        
+        -- Wait until character touches portal
+        local entered = false
+        local connection
+        connection = portal.Touched:Connect(function(hit)
+            if hit:IsDescendantOf(character) then
+                entered = true
+                connection:Disconnect()
+            end
+        end)
+
+        repeat task.wait() until entered
+        
+        task.wait(1)
 
         -- Teleport into SafeBox
         LocalPlayer.Character.HumanoidRootPart.CFrame = workspace.SafeBox.CFrame * CFrame.new(0, 5, 0)
@@ -157,8 +188,9 @@ VoodooTab:CreateButton({
 
 -- 3. Begin (Fire Ability)
 local startTime = nil
+local BeginButton
 
-VoodooTab:CreateButton({
+BeginButton = VoodooTab:CreateButton({
     Name = "Begin",
     Callback = function()
         startTime = tick()
@@ -172,6 +204,10 @@ VoodooTab:CreateButton({
             Duration = 4,
             Image = "check"
         })
+
+        if BeginButton then
+            BeginButton:Destroy()
+        end
     end,
 })
 
@@ -201,11 +237,11 @@ local AntiAFKToggle = VoodooTab:CreateToggle({
 VoodooTab:CreateParagraph({
     Title = "Instructions",
     Content = 
-        "1. Equip Voodoo (requires 666 slaps).\n" ..
-        "2. Teleport to Safe Spot.\n" ..
-        "3. Press 'Begin' to activate invisibility.\n" ..
+        "1. Press 'Equip Ghost' (requires 666 slaps).\n" ..
+        "2. Press 'Teleport to Safe Spot'.\n" ..
+        "3. Press 'Begin' to activate invisibility and the timer.\n" ..
         "4. Use 'Check Time Remaining' to track your hour.\n" ..
-        "5. Enable Anti-Disconnect to stay safe."
+        "5. Enable Anti-Disconnect to prevent roblox from kicking you."
 })
 
 -- 6. Check Time Remaining
