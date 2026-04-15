@@ -25,7 +25,7 @@ UTGTab:CreateLabel("Untitled Tag Glove Buttons")
 UTGTab:CreateButton({
     Name = "Tp to Barzil portal",
     Callback = function()
-        if Places["Lobby"] then    
+        if Places["Lobby3"] then    
             firetouchinterest(game:GetService("Players").LocalPlayer.Character:WaitForChild("Head"), Workspace.Lobby.brazil.portal, 0) 
             task.wait(0.1) 
             firetouchinterest(game:GetService("Players").LocalPlayer.Character:WaitForChild("Head"), Workspace.Lobby.brazil.portal, 1)
@@ -91,7 +91,7 @@ UTGTab:CreateButton({
 UTGTab:CreateButton({
     Name = "Obtain UTG (Method 2)",
     Callback = function()
-        if Places["UTG"] then   
+        if Places["UTG_Obby"] then   
             local character = game.Players.LocalPlayer.Character
             if character and character:FindFirstChild("HumanoidRootPart") then
                 local rootPart = character.HumanoidRootPart
