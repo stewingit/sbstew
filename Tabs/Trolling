@@ -53,7 +53,7 @@ local function RunTrollLogic()
     local _, glove = getStats()
     local LobbyPath = Workspace:FindFirstChild(LocalPlayer.Name) and Workspace[LocalPlayer.Name]:FindFirstChild("InLobby")
 
-    -- 1. Arena Check (Ensures you are not in the lobby)
+    -- 1. Arena Check
     if LobbyPath then
         TrollingActive = false
         if TrollingToggle then TrollingToggle:Set(false) end
@@ -82,28 +82,43 @@ local function RunTrollLogic()
     -- 3. Execution Loop
     task.wait(0.5)
 
-    local cubePath = Workspace.Arena.CubeOfDeathArea:FindFirstChild("the cube of death(i heard it kills)")
     local remote = ReplicatedStorage:WaitForChild("SLOC", 5)
     local rootPart = char:FindFirstChild("HumanoidRootPart")
+    
+    -- Creation of Void Part if selected
+    local voidPart
+    if SelectedTroll == "void" then
+        voidPart = Instance.new("Part")
+        voidPart.Name = "S5"
+        voidPart.Anchored = true
+        voidPart.CanCollide = true
+        voidPart.Transparency = 0.5
+        voidPart.Position = Vector3.new(101, -107, 24)
+        voidPart.Size = Vector3.new(24, 3, 24)
+        voidPart.Parent = Workspace
+    end
 
     for i = 1, TrollCount do
         if not TrollingActive then break end
         
-        if cubePath and rootPart then
-            -- Disable Kill Part
-            cubePath.CanTouch = false
-            if cubePath:FindFirstChild("Part") then
-                cubePath.Part.CanTouch = false
+        if SelectedTroll == "cube of death" then
+            local cubePath = Workspace.Arena.CubeOfDeathArea:FindFirstChild("the cube of death(i heard it kills)")
+            if cubePath and rootPart then
+                cubePath.CanTouch = false
+                if cubePath:FindFirstChild("Part") then
+                    cubePath.Part.CanTouch = false
+                end
+                rootPart.CFrame = cubePath.CFrame * CFrame.new(0, 5, 0)
             end
-
-            -- Teleport
-            rootPart.CFrame = cubePath.CFrame * CFrame.new(0, 5, 0)
-            task.wait(0.5)
-
-            -- Fire Remote
-            if remote then
-                remote:FireServer()
+        elseif SelectedTroll == "void" then
+            if voidPart and rootPart then
+                rootPart.CFrame = voidPart.CFrame * CFrame.new(0, 5, 0)
             end
+        end
+
+        task.wait(0.5)
+        if remote then
+            remote:FireServer()
         end
 
         if i < TrollCount then
@@ -111,12 +126,14 @@ local function RunTrollLogic()
         end
     end
     
+    -- Cleanup Void Part
+    if voidPart then voidPart:Destroy() end
+    
     -- Finish Tasks: Reset and turn off toggle
     if TrollingActive then
         TrollingActive = false
         if TrollingToggle then TrollingToggle:Set(false) end
         
-        -- Reset Character after finishing iterations
         if ResetRemote then
             ResetRemote:FireServer()
         else
@@ -132,7 +149,7 @@ TrollingTab:CreateLabel("Swapper Trolling")
 -- UI Components
 TrollingTab:CreateDropdown({
     Name = "Type",
-    Options = {"cube of death"},
+    Options = {"cube of death", "void"},
     CurrentOption = "cube of death",
     MultipleOptions = false,
     Callback = function(Option)
@@ -161,7 +178,6 @@ TrollingToggle = TrollingTab:CreateToggle({
         if TrollingActive then
             task.spawn(RunTrollLogic)
         else
-            -- Manual disable: Check if in arena to reset
             local LobbyPath = Workspace:FindFirstChild(LocalPlayer.Name) and Workspace[LocalPlayer.Name]:FindFirstChild("InLobby")
             if not LobbyPath and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") and LocalPlayer.Character.Humanoid.Health > 0 then
                 if ResetRemote then
