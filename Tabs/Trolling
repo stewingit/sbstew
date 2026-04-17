@@ -280,7 +280,7 @@ local function RunTrollLogic()
     end
 end
 
-TrollingTab:CreateLabel("Swapper Trolling")
+TrollingTab:CreateLabel("Swapper Trolling (HIGH RISK: Likely chance of getting banned)")
 
 TrollingTab:CreateDropdown({
     Name = "Type",
