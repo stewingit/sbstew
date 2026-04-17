@@ -112,6 +112,7 @@ if isLobby3 then
     handleTab(BadgeTab, "Admin", {"Lobby3", "Application"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Admin")
     handleTab(BadgeTab, "Bomb", {"Lobby2"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Bomb")
     handleTab(BadgeTab, "Boxer", {"Lobby3", "Barzil"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Boxer")
+    handleTab(BadgeTab, "Counter", {"Lobby3", "Maze"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Counter")
     handleTab(BadgeTab, "Plate", {"Lobby3", "Plate"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Plate")
     handleTab(BadgeTab, "RNG", {"Lobby2"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/RNG")
     handleTab(BadgeTab, "UTG", {"Lobby3", "Barzil", "UTG_Obby"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/UTG")
