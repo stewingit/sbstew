@@ -12,9 +12,9 @@ local Workspace = game:GetService("Workspace")
 local Grass = Workspace.Arena["main island"].Grass
 local ZeroPosition = Grass.Position
 local BotSpeed = 21
-local RoamRange = 120
+local RoamRange = 160
 local MaxLockDistance = 80
-local AcceptableDistance = 15
+local AcceptableDistance = 14
 local TargetGlove = "Dice"
 
 local SlapRemote = ReplicatedStorage:WaitForChild("DiceHit")
@@ -109,7 +109,6 @@ local function StartLoops()
                             if Distance < AcceptableDistance and not SlapCooldown then
                                 SlapCooldown = true
                                 Animation:Play()
-                                -- Logic updated to use DiceHit remote
                                 SlapRemote:FireServer(TargetPlayer.Character:FindFirstChild("Left Arm") or TargetRoot)
                                 task.delay(0.6, function() SlapCooldown = false end)
                             end
