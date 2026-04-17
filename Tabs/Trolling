@@ -43,7 +43,7 @@ local function getStats()
     return slaps, currentGlove
 end
 
--- Full Rock Sensing Logic from provided example
+-- Full Rock Sensing
 local function IsValidTarget(p)
     local Character = p.Character
     if not Character then return false end
@@ -52,16 +52,10 @@ local function IsValidTarget(p)
     local Root = Character:FindFirstChild("HumanoidRootPart")
     if not Humanoid or not Root or Humanoid.Health <= 0 then return false end
 
-    -- Rock Logic from Example
+    -- Rock Logic
     local InLobby = Character:FindFirstChild("InLobby")
     local Rock = Character:FindFirstChild("rock") or Character:FindFirstChild("megarock")
-    local Reverse = Character:FindFirstChild("Reversed")
-    local Skull = Character:FindFirstChild("Skull")
-    local Counter = Character:FindFirstChild("Counterd")
     local Steve = Character:FindFirstChild("stevebody")
-    local Visible = Character:FindFirstChild("CarKeysCar") or (Character:FindFirstChild("Head") or Character:FindFirstChildWhichIsA("BasePart")).Transparency == 0
-    local BuddyBox = Character.Head:FindFirstChild("BuddyBox")
-    local Ragdolled = Character:FindFirstChild("FakePart Right Arm")
 
     return (not Rock and not Steve and not InLobby)
 end
@@ -181,7 +175,6 @@ local function RunTrollLogic()
                 rootPart.CFrame = cubePath.CFrame * CFrame.new(0, 5, 0)
             end
         elseif SelectedTroll == "void" then
-            -- Find the best plate
             local targetPos = VoidPositions[1]
             if SelectedTarget == "Random" then
                 targetPos = VoidPositions[math.random(1, #VoidPositions)]
@@ -206,26 +199,46 @@ local function RunTrollLogic()
 
         -- Step B: Wait for valid target and correct player distance
         if SelectedTarget ~= "Random" then
-            Stewfield:Notify({Title = "Targeting", Content = "Waiting for " .. SelectedTarget .. " (Avoiding Rocks)", Duration = 999, Image = "clock"})
+            Stewfield:Notify({Title = "Targeting", Content = "Waiting for " .. SelectedTarget .. "", Duration = 5, Image = "clock"})
             
+            local lastPlateCheck = tick()
             repeat
                 task.wait(0.1)
                 if not TrollingActive or not Players:FindFirstChild(SelectedTarget) then break end
                 
-                -- Check if the target is currently a rock or invalid
+                -- 5 Second Plate Recalculation
+                if SelectedTroll == "void" and tick() - lastPlateCheck >= 5 then
+                    lastPlateCheck = tick()
+                    local tPlayer = Players:FindFirstChild(SelectedTarget)
+                    if tPlayer and tPlayer.Character and tPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        local tRootPos = tPlayer.Character.HumanoidRootPart.Position
+                        local bestVoid = VoidPositions[1]
+                        local minVDist = math.huge
+                        for _, vPos in ipairs(VoidPositions) do
+                            local vDist = (tRootPos - vPos).Magnitude
+                            if vDist < minVDist then
+                                minVDist = vDist
+                                bestVoid = vPos
+                            end
+                        end
+                        rootPart.CFrame = CFrame.new(bestVoid) * CFrame.new(0, 5, 0)
+                    end
+                end
+
                 local targetP = Players:FindFirstChild(SelectedTarget)
                 if targetP and not IsValidTarget(targetP) then
-                    -- If the target is a rock, wait or loop plates if in void mode
                     task.wait(0.5)
                 end
                 
             until getClosestPlayerName() == SelectedTarget
         else
-            -- If Random, check if closest is a rock. If so, cycle baseplates.
+            -- If Random, cycle plates until someone valid is nearby
             local currentClosest = getClosestPlayerName()
             local voidIdx = 1
+            local lastPlateCheck = tick()
             while not currentClosest and TrollingActive do
-                if SelectedTroll == "void" then
+                if SelectedTroll == "void" and tick() - lastPlateCheck >= 5 then
+                    lastPlateCheck = tick()
                     voidIdx = (voidIdx % #VoidPositions) + 1
                     rootPart.CFrame = CFrame.new(VoidPositions[voidIdx]) * CFrame.new(0, 5, 0)
                 end
