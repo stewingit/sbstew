@@ -11,6 +11,7 @@ local MarketPlaceService = game:GetService("MarketplaceService")
 local TrollCount = 1
 local TrollingActive = false
 local SelectedTroll = "cube of death"
+local SelectedTarget = "Random"
 local ResetRemote = ReplicatedStorage:WaitForChild("SelfDestruct", 5) or ReplicatedStorage:WaitForChild("Reset", 5)
 
 -- Helper logic for Stats
@@ -21,10 +22,47 @@ local function getStats()
     return slaps, currentGlove
 end
 
+-- Helper logic to find the closest player name
+local function getClosestPlayerName()
+    local closestName = nil
+    local shortestDist = math.huge
+    local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    
+    if not myRoot then return nil end
+
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local dist = (myRoot.Position - p.Character.HumanoidRootPart.Position).Magnitude
+            if dist < shortestDist then
+                shortestDist = dist
+                closestName = p.Name
+            end
+        end
+    end
+    return closestName
+end
+
 -- Tab Creation
 local TrollingTab = Window:CreateTab("Trolling", "laugh")
 
 local TrollingToggle
+local TargetDropdown
+
+-- Dropdown Refresh Logic
+local function RefreshPlayerList()
+    local playerNames = {"Random"}
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            table.insert(playerNames, p.Name)
+        end
+    end
+    if TargetDropdown then
+        TargetDropdown:Refresh(playerNames)
+    end
+end
+
+Players.PlayerAdded:Connect(RefreshPlayerList)
+Players.PlayerRemoving:Connect(RefreshPlayerList)
 
 -- Lobby Check Logic
 task.spawn(function()
@@ -48,7 +86,8 @@ end)
 -- Main Logic Function
 local function RunTrollLogic()
     local char = LocalPlayer.Character
-    if not char then return end
+    local hum = char and char:FindFirstChild("Humanoid")
+    if not char or not hum then return end
     
     local _, glove = getStats()
     local LobbyPath = Workspace:FindFirstChild(LocalPlayer.Name) and Workspace[LocalPlayer.Name]:FindFirstChild("InLobby")
@@ -101,6 +140,13 @@ local function RunTrollLogic()
     for i = 1, TrollCount do
         if not TrollingActive then break end
         
+        -- Freeze sequence (0.1s before teleport)
+        task.wait(0.1)
+        hum.WalkSpeed = 0
+        hum.JumpPower = 0
+        task.wait(0.1)
+
+        -- Teleport First
         if SelectedTroll == "cube of death" then
             local cubePath = Workspace.Arena.CubeOfDeathArea:FindFirstChild("the cube of death(i heard it kills)")
             if cubePath and rootPart then
@@ -116,10 +162,21 @@ local function RunTrollLogic()
             end
         end
 
-        task.wait(0.5)
-        if remote then
+        -- Wait for Closest Player (if specific target selected)
+        if SelectedTarget ~= "Random" then
+            repeat
+                task.wait(0.05)
+            until getClosestPlayerName() == SelectedTarget or not TrollingActive or not Players:FindFirstChild(SelectedTarget)
+        end
+
+        -- Fire Ability
+        if remote and TrollingActive then
             remote:FireServer()
         end
+        
+        -- Unfreeze
+        hum.WalkSpeed = 16
+        hum.JumpPower = 50
 
         if i < TrollCount then
             task.wait(7)
@@ -157,6 +214,17 @@ TrollingTab:CreateDropdown({
     end,
 })
 
+TargetDropdown = TrollingTab:CreateDropdown({
+    Name = "Target",
+    Options = {"Random"},
+    CurrentOption = "Random",
+    MultipleOptions = false,
+    Callback = function(Option)
+        SelectedTarget = Option[1]
+    end,
+})
+RefreshPlayerList()
+
 TrollingTab:CreateSlider({
     Name = "Amount of Trolls",
     Range = {1, 50},
@@ -193,11 +261,9 @@ TrollingToggle = TrollingTab:CreateToggle({
 TrollingTab:CreateLabel("Instructions")
 TrollingTab:CreateParagraph({
     Title = "How to use",
-    Content = "• Equip the Swapper glove in the lobby.\n" ..
-              "• Set the amount of times you wish to loop the troll.\n" ..
-              "• Enter the arena and turn on 'Swapper Trolling' to begin.\n" ..
-              "• Once the script is finished you will be reset to prevent bans.\n" ..
-              "• The script stops when you finish or return to the lobby."
+    Content = "• Equip Swapper in the lobby.\n" ..
+              "• Select Target: 'Random' swaps instantly, a specific name waits until they are closest to you.\n" ..
+              "• The script teleports you to the hazard first, then waits for the target to be the closest player before swapping."
 })
 
 return TrollingTab
