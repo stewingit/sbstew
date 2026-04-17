@@ -87,7 +87,8 @@ end)
 local function RunTrollLogic()
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChild("Humanoid")
-    if not char or not hum then return end
+    local rootPart = char and char:FindFirstChild("HumanoidRootPart")
+    if not char or not hum or not rootPart then return end
     
     local _, glove = getStats()
     local LobbyPath = Workspace:FindFirstChild(LocalPlayer.Name) and Workspace[LocalPlayer.Name]:FindFirstChild("InLobby")
@@ -122,7 +123,6 @@ local function RunTrollLogic()
     task.wait(0.5)
 
     local remote = ReplicatedStorage:WaitForChild("SLOC", 5)
-    local rootPart = char:FindFirstChild("HumanoidRootPart")
     
     -- Creation of Void Part if selected
     local voidPart
@@ -140,16 +140,16 @@ local function RunTrollLogic()
     for i = 1, TrollCount do
         if not TrollingActive then break end
         
-        -- Freeze sequence (0.1s before teleport)
-        task.wait(0.1)
+        -- Start Freeze sequence
         hum.WalkSpeed = 0
         hum.JumpPower = 0
+        rootPart.Anchored = true
         task.wait(0.1)
 
         -- Teleport First
         if SelectedTroll == "cube of death" then
             local cubePath = Workspace.Arena.CubeOfDeathArea:FindFirstChild("the cube of death(i heard it kills)")
-            if cubePath and rootPart then
+            if cubePath then
                 cubePath.CanTouch = false
                 if cubePath:FindFirstChild("Part") then
                     cubePath.Part.CanTouch = false
@@ -157,7 +157,7 @@ local function RunTrollLogic()
                 rootPart.CFrame = cubePath.CFrame * CFrame.new(0, 5, 0)
             end
         elseif SelectedTroll == "void" then
-            if voidPart and rootPart then
+            if voidPart then
                 rootPart.CFrame = voidPart.CFrame * CFrame.new(0, 5, 0)
             end
         end
@@ -169,12 +169,16 @@ local function RunTrollLogic()
             until getClosestPlayerName() == SelectedTarget or not TrollingActive or not Players:FindFirstChild(SelectedTarget)
         end
 
+        -- Delay before ability fire
+        task.wait(0.3)
+
         -- Fire Ability
         if remote and TrollingActive then
             remote:FireServer()
         end
         
         -- Unfreeze
+        rootPart.Anchored = false
         hum.WalkSpeed = 16
         hum.JumpPower = 50
 
@@ -183,10 +187,8 @@ local function RunTrollLogic()
         end
     end
     
-    -- Cleanup Void Part
     if voidPart then voidPart:Destroy() end
     
-    -- Finish Tasks: Reset and turn off toggle
     if TrollingActive then
         TrollingActive = false
         if TrollingToggle then TrollingToggle:Set(false) end
@@ -263,7 +265,8 @@ TrollingTab:CreateParagraph({
     Title = "How to use",
     Content = "• Equip Swapper in the lobby.\n" ..
               "• Select Target: 'Random' swaps instantly, a specific name waits until they are closest to you.\n" ..
-              "• The script teleports you to the hazard first, then waits for the target to be the closest player before swapping."
+              "• Your character will anchor to prevent movement during the swap process.\n" ..
+              "• Includes a 0.3s delay after teleporting before firing the ability."
 })
 
 return TrollingTab
