@@ -1,0 +1,238 @@
+-- RNG GLOVE TAB SCRIPT
+local Stewfield = getgenv().sbstew_Stewfield
+local Window = getgenv().sbstew_Window
+local Places = getgenv().sbstew_Places
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
+local Grass = Workspace.Arena["main island"].Grass
+local ZeroPosition = Grass.Position
+local BotSpeed = 21
+local RoamRange = 120
+local MaxLockDistance = 80
+local AcceptableDistance = 15
+local TargetGlove = "Dice"
+
+local SlapRemote = ReplicatedStorage:WaitForChild("DiceHit")
+local SlapAnimation = ReplicatedStorage.Slap
+local Reset = LocalPlayer.Reset
+
+local LockedTarget = nil
+local SlapCooldown = false
+local LocalHumanoid = nil
+local Animation = nil
+local InfiniteMode = false
+
+local RNGTab = Window:CreateTab("RNG Glove", "dice-5")
+RNGTab:CreateLabel("RNG Glove Obtainment")
+
+-- Function to check current slaps
+local function getStats()
+    local stats = LocalPlayer:FindFirstChild("leaderstats")
+    local slaps = (stats and stats:FindFirstChild("Slaps")) and stats.Slaps.Value or 0
+    return slaps
+end
+
+local function ReturnValidVector3Unit(Vector)
+    if Vector.Magnitude == 0 then return Vector3.zero end
+    return Vector.Unit
+end
+
+local function CharacterLoaded(Character)
+    local Humanoid = Character:WaitForChild("Humanoid", 10)
+    LocalHumanoid = Humanoid
+    Animation = (Humanoid:FindFirstChild("Animator") or Humanoid):LoadAnimation(SlapAnimation)
+    Humanoid.AutomaticScalingEnabled = false
+    Humanoid.HipHeight = 0.1
+
+    local Support = Humanoid.RootPart:FindFirstChild("Bot Support") or Instance.new("BodyPosition")
+    Support.Position = ZeroPosition
+    Support.MaxForce = Vector3.new(200, 0, 200)
+    Support.Name = "Bot Support"
+    Support.Parent = Humanoid.RootPart
+end
+
+local function GetTarget()
+    local ClosestPlayer = nil
+    local ShortestDistance = MaxLockDistance
+
+    for _, v in ipairs(Players:GetPlayers()) do
+        local Character = v.Character
+        if v ~= LocalPlayer and Character and not LocalPlayer:IsFriendsWith(v.UserId) then
+            local Humanoid = Character:FindFirstChildWhichIsA("Humanoid")
+            if Humanoid and Humanoid.Health > 0 then
+                local Root = Humanoid.RootPart
+                if Root then
+                    local Distance = (LocalHumanoid.RootPart.Position - Root.Position).Magnitude
+                    local InMap = (Root.Position - ZeroPosition).Magnitude < RoamRange
+                    local InLobby = Character:FindFirstChild("InLobby")
+                    local Rock = Character:FindFirstChild("rock")
+                    local Reverse = Character:FindFirstChild("Reversed")
+                    local Skull = Character:FindFirstChild("Skull")
+                    local Counter = Character:FindFirstChild("Counterd")
+                    local Steve = Character:FindFirstChild("stevebody")
+                    local Visible = Character:FindFirstChild("CarKeysCar") or (Character:FindFirstChild("Head") or Character:FindFirstChildWhichIsA("BasePart")).Transparency == 0
+                    local BuddyBox = Character.Head:FindFirstChild("BuddyBox")
+                    local Ragdolled = Character:FindFirstChild("FakePart Right Arm")
+
+                    local Approved = (InMap and Distance < ShortestDistance and not Rock and not Reverse and not Steve and not Skull and Visible and not BuddyBox and not Ragdolled and not InLobby and not Counter)
+
+                    if Approved then
+                        ClosestPlayer = v
+                        ShortestDistance = Distance
+                    end
+                end
+            end
+        end
+    end
+    return ClosestPlayer, ShortestDistance
+end
+
+local function StartLoops()
+    task.spawn(function()
+        while getgenv().RNG_Farm do
+            local Character = LocalPlayer.Character
+            if LocalHumanoid and LocalHumanoid.RootPart and Character then
+                if not Character:FindFirstChild("InLobby") then
+                    local TargetPlayer, Distance = GetTarget()
+
+                    if TargetPlayer and TargetPlayer.Character then
+                        local TargetRoot = TargetPlayer.Character:FindFirstChildWhichIsA("Humanoid").RootPart
+                        if LocalHumanoid.Health > 0 and TargetRoot then
+                            local TargetPosition = TargetRoot.Position + ReturnValidVector3Unit(TargetRoot.AssemblyLinearVelocity)
+                            LocalHumanoid:MoveTo(TargetPosition)
+
+                            if Distance < AcceptableDistance and not SlapCooldown then
+                                SlapCooldown = true
+                                Animation:Play()
+                                -- Logic updated to use DiceHit remote
+                                SlapRemote:FireServer(TargetPlayer.Character:FindFirstChild("Left Arm") or TargetRoot)
+                                task.delay(0.6, function() SlapCooldown = false end)
+                            end
+                        end
+                    else
+                        LocalHumanoid:MoveTo(LocalHumanoid.RootPart.Position)
+                    end
+                else
+                    -- Auto-Equip logic if in Lobby
+                    if LocalPlayer.leaderstats.Glove.Value ~= TargetGlove then
+                        local GloveObj = Workspace.Lobby:WaitForChild(TargetGlove, 2)
+                        if GloveObj then
+                            fireclickdetector(GloveObj:FindFirstChildOfClass("ClickDetector"))
+                        end
+                    else
+                        LocalHumanoid:MoveTo(Workspace.Lobby.Teleport1.Position)
+                    end
+                end
+
+                if LocalHumanoid and LocalHumanoid.RootPart then
+                    local Speed = BotSpeed * 2 - math.clamp(LocalHumanoid.RootPart.AssemblyLinearVelocity.Magnitude, 0, BotSpeed)
+                    LocalHumanoid.WalkSpeed = Speed
+                end
+            end
+            RunService.RenderStepped:Wait()
+        end
+    end)
+
+    task.spawn(function()
+        while task.wait(0.3) do
+            if not getgenv().RNG_Farm then break end
+            local Character = LocalPlayer.Character
+
+            if LocalHumanoid and Character then
+                if not Character:FindFirstChild("InLobby") then
+                    for _, v in ipairs(Character:GetChildren()) do
+                        if v:IsA("BasePart") then v.CanTouch = false end
+                    end
+                end
+
+                local Root = LocalHumanoid.RootPart
+                if Root and (Root.Position.Magnitude > 1536 or Root.Position.Y < -20) then
+                    Reset:FireServer()
+                    task.wait(1)
+                end
+
+                if not Character:FindFirstChildWhichIsA("Tool") and LocalPlayer.Backpack:FindFirstChildWhichIsA("Tool") then
+                    LocalPlayer.Backpack:FindFirstChildWhichIsA("Tool").Parent = Character
+                end
+            end
+        end
+    end)
+end
+
+-- Character Connection for Infinite Mode
+LocalPlayer.CharacterAdded:Connect(function(char)
+    task.wait(0.5)
+    if getgenv().RNG_Farm then
+        CharacterLoaded(char)
+        StartLoops()
+    end
+end)
+
+RNGTab:CreateButton({
+    Name = "Equip Dice glove",
+    Callback = function()
+        local LobbyPath = Workspace:FindFirstChild(LocalPlayer.Name) and Workspace[LocalPlayer.Name]:FindFirstChild("InLobby")
+        
+        if LobbyPath then
+            if getStats() >= 585 then
+                local GloveObj = Workspace.Lobby:WaitForChild("Dice", 2)
+                if GloveObj then
+                    fireclickdetector(GloveObj:FindFirstChildOfClass("ClickDetector"))
+                end
+            else
+                Stewfield:Notify({
+                    Title = "Insufficient Slaps",
+                    Content = "You need 585 slaps to equip Dice!",
+                    Duration = 5,
+                    Image = "lock"
+                })
+            end
+        else
+            Stewfield:Notify({
+                Title = "Error",
+                Content = "Make sure you're in the lobby.",
+                Duration = 5,
+                Image = "circle-alert"
+            })
+        end
+    end,
+})
+
+RNGTab:CreateToggle({
+    Name = "Get RNG",
+    CurrentValue = false,
+    Flag = "AutoRNG_Flag",
+    Callback = function(Value)
+        getgenv().RNG_Farm = Value
+        if Value then
+            local stats = LocalPlayer:FindFirstChild("leaderstats")
+            local currentGlove = (stats and stats:FindFirstChild("Glove")) and stats.Glove.Value or "None"
+
+            if currentGlove == "Dice" then
+                if LocalPlayer.Character then
+                    CharacterLoaded(LocalPlayer.Character)
+                    StartLoops()
+                end
+            else
+                Stewfield:Notify({
+                    Title = "Glove Required",
+                    Content = "You must have the Dice glove equipped first!",
+                    Duration = 5,
+                    Image = "lock"
+                })
+            end
+        end
+    end,
+})
+
+RNGTab:CreateParagraph({
+    Title = "Instructions",
+    Content = "1. Press 'Equip Dice'\n2. Toggle 'Get RNG' to start farming.\n3. The bot will go forever until the toggle is off."
+})
+
+return RNGTab
