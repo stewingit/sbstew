@@ -151,7 +151,7 @@ local function RunTrollLogic()
     for i = 1, TrollCount do
         if not TrollingActive then break end
 
-        -- Teleport First
+        -- Step A: Position User at the Death Point
         if SelectedTroll == "cube of death" then
             local cubePath = Workspace.Arena.CubeOfDeathArea:FindFirstChild("the cube of death(i heard it kills)")
             if cubePath then
@@ -167,33 +167,35 @@ local function RunTrollLogic()
             end
         end
 
-        -- Wait for Closest Player (if specific target selected)
+        -- Step B: Wait for the specific target to be the closest (if not Random)
         if SelectedTarget ~= "Random" then
-            Stewfield:Notify({
-                Title = "Waiting",
-                Content = "Waiting for " .. SelectedTarget .. " to be the closest",
-                Duration = 999, -- Stay until manually closed or ability fires
+            local notify = Stewfield:Notify({
+                Title = "Targeting",
+                Content = "Waiting for " .. SelectedTarget .. " to get close...",
+                Duration = 5,
                 Image = "clock"
             })
             
             repeat
-                task.wait(0.05)
-            until getClosestPlayerName() == SelectedTarget or not TrollingActive or not Players:FindFirstChild(SelectedTarget)
-            
-            Stewfield:Notify({Title = "Target Found", Content = "Executing swap...", Duration = 1, Image = "check"})
+                task.wait(0.1)
+                -- Check if target still exists or script was disabled
+                if not Players:FindFirstChild(SelectedTarget) or not TrollingActive then break end
+            until getClosestPlayerName() == SelectedTarget
         end
 
-        task.wait(0.3)
-
+        -- Step C: Trigger Swap
+        task.wait(0.3) -- Brief buffer to ensure position is registered
         if SLOC_Remote and TrollingActive then
             SLOC_Remote:FireServer()
         end
-        
+
+        -- Step D: Cool-down for Swapper Ability
         if i < TrollCount then
             task.wait(7)
         end
     end
     
+    -- Cleanup
     if voidPart then voidPart:Destroy() end
     
     if TrollingActive then
@@ -271,6 +273,7 @@ TrollingTab:CreateLabel("Instructions")
 TrollingTab:CreateParagraph({
     Title = "How to use",
     Content = "• Equip the Swapper glove in the lobby.\n" ..
+              "• Select 'Random' to swap whoever is closest, or pick a specific player.\n" ..
               "• Set the amount of times you wish to loop the troll.\n" ..
               "• Enter the arena and turn on 'Swapper Trolling' to begin.\n" ..
               "• Once the script is finished you will be reset to prevent bans.\n" ..
