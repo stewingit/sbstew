@@ -1,0 +1,246 @@
+-- COUNTER GLOVE TAB SCRIPT
+local Stewfield = getgenv().sbstew_Stewfield
+local Window = getgenv().sbstew_Window
+local Places = getgenv().sbstew_Places
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+
+-- Variables for Logic
+local leverStartTime = nil
+
+-- Logic for Keypad Status and Code
+local function getKeypadInfo()
+    local keypad = Workspace:FindFirstChild("Keypad")
+    local status = "No"
+    local code = (#Players:GetPlayers() * 25) + 1100 - 7
+    
+    if keypad then
+        local pivot = keypad:GetPivot()
+        if math.abs(pivot.X - (-427.55)) < 5 then
+            status = "Yes (Slapple Island)"
+        else
+            status = "Yes (Moai Island)"
+        end
+    end
+    return status, tostring(code)
+end
+
+local keypadStatus, currentCode = getKeypadInfo()
+
+-- Create Tab
+local CounterTab = Window:CreateTab("Counter Glove", "timer")
+CounterTab:CreateLabel("Counter Glove Obtainment")
+
+-- Keypad Status Paragraph
+local StatusPara = CounterTab:CreateParagraph({
+    Title = "Keypad Status",
+    Content = string.format("Spawned: %s\nCode: %s", keypadStatus, currentCode)
+})
+
+-- 1. Go to Maze (Keypad TP + Auto Type)
+CounterTab:CreateButton({
+    Name = "Go to maze",
+    Callback = function()
+        if Places["Lobby3"] then
+            local keypad = Workspace:FindFirstChild("Keypad")
+            if keypad then
+                -- Teleport to Keypad
+                local lp = Players.LocalPlayer
+                local character = lp.Character
+                if character and character:FindFirstChild("HumanoidRootPart") then
+                    character.HumanoidRootPart.CFrame = keypad:GetPivot() * CFrame.new(0, 0, -3)
+                    
+                    -- Logic to enter code
+                    task.wait(0.5)
+                    local codeToEnter = currentCode
+                    for i = 1, #codeToEnter do
+                        local digit = string.sub(codeToEnter, i, i)
+                        local button = keypad.Buttons:FindFirstChild(digit)
+                        if button and button:FindFirstChild("ClickDetector") then
+                            fireclickdetector(button.ClickDetector)
+                            task.wait(0.1)
+                        end
+                    end
+                    fireclickdetector(keypad.Buttons.Enter.ClickDetector)
+                end
+            else
+                Stewfield:Notify({
+                    Title = "Not Found",
+                    Content = "Keypad is not currently spawned.",
+                    Duration = 4,
+                    Image = "circle-alert",
+                })
+            end
+        else
+            Stewfield:Notify({
+                Title = "Wrong Game",
+                Content = "You must be in Slap Battles to use this.",
+                Duration = 4,
+                Image = "circle-alert",
+            })
+        end
+    end,
+})
+
+-- 2. Flip the Lever
+CounterTab:CreateButton({
+    Name = "Flip the lever",
+    Callback = function()
+        if Places["Maze"] then
+            local lever = Workspace:FindFirstChild("CounterLever")
+            if lever and lever:FindFirstChild("ClickDetector") then
+                fireclickdetector(lever.ClickDetector)
+                leverStartTime = tick()
+                Stewfield:Notify({
+                    Title = "Lever Flipped",
+                    Content = "Timer started! Wait 2 minutes (121s).",
+                    Duration = 5,
+                    Image = "check-circle",
+                })
+            else
+                Stewfield:Notify({
+                    Title = "Error",
+                    Content = "Lever not found! Ensure you are in the maze area.",
+                    Duration = 4,
+                    Image = "circle-alert",
+                })
+            end
+        else
+            Stewfield:Notify({
+                Title = "Wrong Place",
+                Content = "You must be in the Maze to use this.",
+                Duration = 4,
+                Image = "circle-alert",
+            })
+        end
+    end,
+})
+
+-- 3. Destroy Pim
+CounterTab:CreateButton({
+    Name = "Destroy Pim",
+    Callback = function()
+        if Places["Maze"] then
+            local npc = Workspace:FindFirstChild("Pim")
+            if npc and npc:FindFirstChild("HumanoidRootPart") then
+                local position = Vector3.new(-516.951111, 8.21111965, -141.350296)
+                local orientation = Vector3.new(1.00135803e-05, 7.00354576e-06, 1)
+                npc.HumanoidRootPart.CFrame = CFrame.new(position, position + orientation)
+                
+                Stewfield:Notify({
+                    Title = "Pim Relocated",
+                    Content = "Pim has been sent to the void/wall.",
+                    Duration = 3,
+                    Image = "trash-2",
+                })
+            else
+                Stewfield:Notify({
+                    Title = "Error",
+                    Content = "Pim is not currently spawned.",
+                    Duration = 4,
+                    Image = "circle-alert",
+                })
+            end
+        else
+            Stewfield:Notify({
+                Title = "Wrong Place",
+                Content = "You must be in the Maze to use this.",
+                Duration = 4,
+                Image = "circle-alert",
+            })
+        end
+    end,
+})
+
+-- 4. Check Time Remaining
+CounterTab:CreateButton({
+    Name = "Check time remaining",
+    Callback = function()
+        if Places["Maze"] then
+            if leverStartTime == nil then
+                Stewfield:Notify({
+                    Title = "Timer Not Started",
+                    Content = "You must flip the lever first!",
+                    Duration = 3,
+                    Image = "circle-alert"
+                })
+            else
+                local timeElapsed = tick() - leverStartTime
+                local timeLeft = 121 - timeElapsed 
+
+                if timeLeft <= 0 then
+                    Stewfield:Notify({
+                        Title = "Time Up!",
+                        Content = "Counter glove should have spawned!",
+                        Duration = 3,
+                        Image = "hourglass"
+                    })
+                else
+                    local minutes = math.floor(timeLeft / 60)
+                    local seconds = math.floor(timeLeft % 60)
+                    Stewfield:Notify({
+                        Title = "Time Remaining",
+                        Content = string.format("Pim spawns in: %d minutes and %d seconds", minutes, seconds),
+                        Duration = 5,
+                        Image = "hourglass"
+                    })
+                end
+            end
+        else
+            Stewfield:Notify({
+                Title = "Wrong Place",
+                Content = "You must be in the Maze to use this.",
+                Duration = 4,
+                Image = "circle-alert",
+            })
+        end
+    end,
+})
+
+-- 5. Tp to Counter Glove
+CounterTab:CreateButton({
+    Name = "Tp to counter glove",
+    Callback = function()
+        if Places["Maze"] then
+            local maze = Workspace:FindFirstChild("Maze")
+            if maze then
+                local parts = maze:GetChildren()
+                local part = parts[673] -- Using index 673 per logic provided
+                if part and Players.LocalPlayer.Character then
+                    local hrp = Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        hrp.CFrame = part.CFrame
+                        Stewfield:Notify({
+                            Title = "Teleported",
+                            Content = "Teleported to the Counter Glove location.",
+                            Duration = 3,
+                            Image = "map-pin"
+                        })
+                    end
+                end
+            else
+                Stewfield:Notify({
+                    Title = "Error",
+                    Content = "Maze map not found. Are you in the right place?",
+                    Duration = 4,
+                    Image = "circle-alert"
+                })
+            end
+        else
+            Stewfield:Notify({
+                Title = "Wrong Place",
+                Content = "You must be in the Maze to use this.",
+                Duration = 4,
+                Image = "circle-alert",
+            })
+        end
+    end,
+})
+
+CounterTab:CreateParagraph({
+    Title = "Instructions",
+    Content = "1. Check the Keypad Status. If it says 'Yes', press 'Go to maze'.\n2. Once inside, find and press 'Flip the lever'.\n3. Wait 2 minutes. Use 'Check time remaining' to track Pim's arrival.\n4. When Pim spawns, press 'Destroy Pim' to stay safe.\n5. Press 'Tp to counter glove' to collect the badge."
+})
+
+return CounterTab
