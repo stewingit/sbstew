@@ -1,6 +1,13 @@
 -- BOMB GLOVE TAB SCRIPT
+
+if not getgenv().sbstew_Utils then
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Stuff"))()
+end
+
 local Stewfield = getgenv().sbstew_Stewfield
 local Window = getgenv().sbstew_Window
+local Utils = getgenv().sbstew_Utils
+local RLibrary = getgenv().sbstew_Remotes
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -16,8 +23,8 @@ local MaxLockDistance = 80
 local AcceptableDistance = 15
 local TargetGlove = "Warp"
 
-local SlapRemote = ReplicatedStorage:WaitForChild("WarpHt")
-local AbilityRemote = ReplicatedStorage:WaitForChild("WLOC")
+local SlapRemote = RLibrary.Slap.Warp
+local AbilityRemote = RLibrary.Ability.Warp
 local SlapAnimation = ReplicatedStorage.Slap
 
 local LockedTarget = nil
@@ -56,7 +63,7 @@ local function GetTarget(LocalHumanoid)
                     local Distance = (LocalHumanoid.RootPart.Position - Root.Position).Magnitude
                     local InMap = (Root.Position - ZeroPosition).Magnitude < RoamRange
                     
-                    local InLobby = Character:FindFirstChild("InLobby")
+                    local InLobby = Utils.IsInLobby(Character)
                     local Rock = Character:FindFirstChild("rock")
                     local Reverse = Character:FindFirstChild("Reversed")
                     local Skull = Character:FindFirstChild("Skull")
@@ -85,14 +92,12 @@ local function StartBombLoop()
             if LocalHumanoid and LocalHumanoid.Parent and Character then
                 
                 -- 1. CHECK LOBBY / EQUIP
-                if Character:FindFirstChild("InLobby") then
-                    if LocalPlayer.leaderstats.Glove.Value ~= TargetGlove then
-                        local GloveObj = Workspace.Lobby:WaitForChild(TargetGlove, 2)
-                        if GloveObj then
-                            fireclickdetector(GloveObj:FindFirstChildOfClass("ClickDetector"))
-                        end
+                if Utils.IsInLobby(Character) then
+                    local _, currentGlove = Utils.GetStats()
+                    if currentGlove ~= TargetGlove then
+                        Utils.EquipGlove(TargetGlove)
                     else
-                        LocalHumanoid:MoveTo(Workspace.Lobby.Teleport1.Position)
+                        Utils.WalkToPortal()
                     end
                 
                 -- 2. ARENA LOGIC
@@ -144,16 +149,12 @@ end
 BombTab:CreateButton({
     Name = "Equip Warp glove",
     Callback = function()
-        local LobbyPath = Workspace:FindFirstChild(LocalPlayer.Name) and Workspace[LocalPlayer.Name]:FindFirstChild("InLobby")
         local unlocked = LocalPlayer:FindFirstChild("_unlockedGloves")
         local hasWarp = unlocked and unlocked:FindFirstChild("Warp") and unlocked.Warp.Value == true
 
-        if LobbyPath then
+        if Utils.IsInLobby() then
             if hasWarp then
-                local GloveObj = Workspace.Lobby:WaitForChild("Warp", 2)
-                if GloveObj then
-                    fireclickdetector(GloveObj:FindFirstChildOfClass("ClickDetector"))
-                end
+                Utils.EquipGlove("Warp")
             else
                 Stewfield:Notify({
                     Title = "Missing Requirement",
@@ -176,8 +177,7 @@ BombTab:CreateButton({
 BombTab:CreateButton({
     Name = "Get Bomb",
     Callback = function()
-        local stats = LocalPlayer:FindFirstChild("leaderstats")
-        local currentGlove = (stats and stats:FindFirstChild("Glove")) and stats.Glove.Value or "None"
+        local _, currentGlove = Utils.GetStats()
 
         if currentGlove == "Warp" then
             getgenv().BSF_Bomb = true
