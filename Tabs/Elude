@@ -28,7 +28,7 @@ end
 local keypadStatus, currentCode = getKeypadInfo()
 
 -- Create Tab
-local EludeTab = Window:CreateTab("Elude Glove", "hat-glasses")
+local EludeTab = Window:CreateTab("Elude Glove", "eye-off")
 EludeTab:CreateLabel("Elude Glove Obtainment")
 
 -- Keypad Status Paragraph
