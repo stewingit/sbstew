@@ -1,40 +1,216 @@
 -- WARP GLOVE TAB SCRIPT
+
+if not getgenv().sbstew_Utils then
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Stuff"))()
+end
+
 local Stewfield = getgenv().sbstew_Stewfield
 local Window = getgenv().sbstew_Window
 local Places = getgenv().sbstew_Places
-
--- Load Engine from the provided link
-if not getgenv().BotEngine then
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Engine"))()
-end
-local Engine = getgenv().BotEngine
+local RLibrary = getgenv().sbstew_Remotes
+local Utils = getgenv().sbstew_Utils
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
+local Grass = Workspace.Arena["main island"].Grass
+local ZeroPosition = Grass.Position
+local BotSpeed = 21
+local RoamRange = 120
+local MaxLockDistance = 80
+local AcceptableDistance = 15
 local TargetGlove = "Swapper"
+
+-- Pulled from the Global Remote Library
+local SlapRemote = RLibrary.Slap.Swapper
+local AbilityRemote = RLibrary.Ability.Swapper
+local SlapAnimation = ReplicatedStorage.Slap
+local Reset = RLibrary.Misc.PlayerReset
+
+local LockedTarget = nil
+local SlapCooldown = false
+local LocalHumanoid = nil
+local Animation = nil
+local CharacterConnection = nil
 local InfiniteMode = false
 
 local WarpTab = Window:CreateTab("Warp Glove", "rss")
 WarpTab:CreateLabel("Warp Glove Obtainment")
 
+local function ReturnValidVector3Unit(Vector)
+    if Vector.Magnitude == 0 then return Vector3.zero end
+    return Vector.Unit
+end
+
+local function CharacterLoaded(Character)
+    local Humanoid = Character:WaitForChild("Humanoid", 10)
+    LocalHumanoid = Humanoid
+    Animation = (Humanoid:FindFirstChild("Animator") or Humanoid):LoadAnimation(SlapAnimation)
+    Humanoid.AutomaticScalingEnabled = false
+    Humanoid.HipHeight = 0.1
+
+    local Support = Humanoid.RootPart:FindFirstChild("Bot Support") or Instance.new("BodyPosition")
+    Support.Position = ZeroPosition
+    Support.MaxForce = Vector3.new(200, 0, 200)
+    Support.Name = "Bot Support"
+    Support.Parent = Humanoid.RootPart
+end
+
+local StartLoops
+
+local function GetTarget()
+    if LockedTarget then
+        local Character = LockedTarget.Character
+        local IsValid = LockedTarget.Parent == Players and Character and Character:FindFirstChild("Humanoid") and Character.Humanoid.Health > 0
+
+        local outOfRange = false
+        if IsValid then
+            local Root = Character.Humanoid.RootPart
+            if Root and (Root.Position - ZeroPosition).Magnitude >= RoamRange then
+                outOfRange = true
+            end
+        end
+
+        if not IsValid or outOfRange then
+            getgenv().BSF = false
+            LockedTarget = nil
+
+            task.spawn(function()
+                task.wait(0.35)
+                AbilityRemote:FireServer()
+                task.wait(1)
+                Reset:FireServer()
+            end)
+
+            return nil, 512
+        end
+
+        local Root = Character.Humanoid.RootPart
+        return LockedTarget, (LocalHumanoid.RootPart.Position - Root.Position).Magnitude
+    end
+
+    for _, v in ipairs(Players:GetPlayers()) do
+        local Character = v.Character
+        if v ~= LocalPlayer and Character and not LocalPlayer:IsFriendsWith(v.UserId) then
+            local Humanoid = Character:FindFirstChildWhichIsA("Humanoid")
+            if Humanoid and Humanoid.Health > 0 then
+                local Root = Humanoid.RootPart
+                if Root then
+                    local Distance = (LocalHumanoid.RootPart.Position - Root.Position).Magnitude
+                    local InMap = (Root.Position - ZeroPosition).Magnitude < RoamRange
+                    local InLobby = Utils.IsInLobby(Character)
+                    local Rock = Character:FindFirstChild("rock")
+                    local Reverse = Character:FindFirstChild("Reversed")
+                    local Skull = Character:FindFirstChild("Skull")
+                    local Counter = Character:FindFirstChild("Counterd")
+                    local Steve = Character:FindFirstChild("stevebody")
+                    local Visible = Character:FindFirstChild("CarKeysCar") or (Character:FindFirstChild("Head") or Character:FindFirstChildWhichIsA("BasePart")).Transparency == 0
+                    local BuddyBox = Character.Head:FindFirstChild("BuddyBox")
+                    local Ragdolled = Character:FindFirstChild("FakePart Right Arm")
+
+                    local Approved = (InMap and Distance <= MaxLockDistance and not Rock and not Reverse and not Steve and not Skull and Visible and not BuddyBox and not Ragdolled and not InLobby and not Counter)
+
+                    if Approved then
+                        LockedTarget = v
+                        return v, Distance
+                    end
+                end
+            end
+        end
+    end
+
+    return nil, 512
+end
+
+StartLoops = function()
+    task.spawn(function()
+        while getgenv().BSF do
+            local Character = LocalPlayer.Character
+            if LocalHumanoid and LocalHumanoid.RootPart and Character then
+                if not Utils.IsInLobby(Character) then
+                    local TargetPlayer, Distance = GetTarget()
+
+                    if TargetPlayer and TargetPlayer.Character then
+                        local TargetRoot = TargetPlayer.Character:FindFirstChildWhichIsA("Humanoid").RootPart
+                        if LocalHumanoid.Health > 0 and TargetRoot then
+                            local TargetPosition = TargetRoot.Position + ReturnValidVector3Unit(TargetRoot.AssemblyLinearVelocity)
+                            LocalHumanoid:MoveTo(TargetPosition)
+
+                            if Distance < AcceptableDistance and not SlapCooldown then
+                                SlapCooldown = true
+                                Animation:Play()
+                                SlapRemote:FireServer(TargetRoot)
+                                task.delay(0.6, function() SlapCooldown = false end)
+                            end
+                        end
+                    else
+                        LocalHumanoid:MoveTo(LocalHumanoid.RootPart.Position)
+                    end
+                else
+                    local _, currentGlove = Utils.GetStats()
+                    if currentGlove ~= TargetGlove then
+                        Utils.EquipGlove(TargetGlove)
+                    else
+                        Utils.WalkToPortal()
+                    end
+                end
+
+                if LocalHumanoid and LocalHumanoid.RootPart then
+                    local Speed = BotSpeed * 2 - math.clamp(LocalHumanoid.RootPart.AssemblyLinearVelocity.Magnitude, 0, BotSpeed)
+                    LocalHumanoid.WalkSpeed = Speed
+                end
+            end
+
+            RunService.RenderStepped:Wait()
+        end
+    end)
+
+    task.spawn(function()
+        while task.wait(0.3) do
+            if not getgenv().BSF then break end
+            local Character = LocalPlayer.Character
+
+            if LocalHumanoid and Character then
+                if not Utils.IsInLobby(Character) then
+                    for _, v in ipairs(Character:GetChildren()) do
+                        if v:IsA("BasePart") then v.CanTouch = false end
+                    end
+                end
+
+                local Root = LocalHumanoid.RootPart
+                if Root and (Root.Position.Magnitude > 1536 or Root.Position.Y < -20) then
+                    Reset:FireServer()
+                    task.wait(1)
+                end
+
+                if not Character:FindFirstChildWhichIsA("Tool") and LocalPlayer.Backpack:FindFirstChildWhichIsA("Tool") then
+                    LocalPlayer.Backpack:FindFirstChildWhichIsA("Tool").Parent = Character
+                end
+            end
+        end
+    end)
+end
+
 -- Character Connection for Infinite Mode
-LocalPlayer.CharacterAdded:Connect(function(char)
+CharacterConnection = LocalPlayer.CharacterAdded:Connect(function(char)
     task.wait(0.5)
     if InfiniteMode then
-        Engine.SetupCharacter(char)
-        Engine.ToggleWarpObtainment(true)
+        getgenv().BSF = true
+        CharacterLoaded(char)
+        StartLoops()
     end
 end)
 
 WarpTab:CreateButton({
     Name = "Equip Swapper glove",
     Callback = function()
-        if Engine.IsInLobby() then
-            local slaps, _ = Engine.GetStats()
+        if Utils.IsInLobby() then
+            local slaps, _ = Utils.GetStats()
             if slaps >= 350 then
-                Engine.EquipGlove("Swapper")
+                Utils.EquipGlove("Swapper")
             else
                 Stewfield:Notify({
                     Title = "Insufficient Slaps",
@@ -57,12 +233,13 @@ WarpTab:CreateButton({
 WarpTab:CreateButton({
     Name = "Get Warp",
     Callback = function()
-        local _, currentGlove = Engine.GetStats()
+        local _, currentGlove = Utils.GetStats()
 
         if currentGlove == "Swapper" then
+            getgenv().BSF = true
             if LocalPlayer.Character then
-                Engine.SetupCharacter(LocalPlayer.Character)
-                Engine.ToggleWarpObtainment(true)
+                CharacterLoaded(LocalPlayer.Character)
+                StartLoops()
             end
         else
             Stewfield:Notify({
