@@ -109,7 +109,8 @@ CounterTab:CreateButton({
 })
 
 -- 2. Flip the Lever
-CounterTab:CreateButton({
+local FlipButton
+FlipButton = CounterTab:CreateButton({
     Name = "Flip the lever",
     Callback = function()
         if Places["Maze"] then
@@ -117,6 +118,11 @@ CounterTab:CreateButton({
             if lever and lever:FindFirstChild("ClickDetector") then
                 fireclickdetector(lever.ClickDetector)
                 leverStartTime = tick()
+                
+                if FlipButton then
+                    FlipButton:Destroy()
+                end
+
                 Stewfield:Notify({
                     Title = "Lever Flipped",
                     Content = "Pim has spawned! Timer started. Wait 2 minutes for the glove to spawn.",
@@ -171,8 +177,7 @@ CounterTab:CreateButton({
                     Image = "circle-alert",
                 })
             end
-            
-            -- Jump and Teleport player to safe coordinates
+
             local char = LocalPlayer.Character
             local hrp = char and char:FindFirstChild("HumanoidRootPart")
             local hum = char and char:FindFirstChild("Humanoid")
@@ -245,7 +250,7 @@ CounterTab:CreateButton({
     end,
 })
 
--- 5. Tp to Counter Glove (Added Timer Check)
+-- 5. Tp to Counter Glove
 CounterTab:CreateButton({
     Name = "Tp to counter glove",
     Callback = function()
@@ -268,7 +273,8 @@ CounterTab:CreateButton({
                 if part and LocalPlayer.Character then
                     local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                     if hrp then
-                        hrp.CFrame = part.CFrame
+                        -- Teleporting slightly above the part to avoid getting stuck
+                        hrp.CFrame = part.CFrame * CFrame.new(0, 3, 0)
                         Stewfield:Notify({
                             Title = "Teleported",
                             Content = "Teleported to the Counter Glove location.",
