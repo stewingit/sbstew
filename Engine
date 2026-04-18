@@ -28,7 +28,7 @@ local Remotes = {
     },
     Misc = {
         Reset = ReplicatedStorage:WaitForChild("SelfDestruct", 2) or ReplicatedStorage:WaitForChild("Reset", 2),
-        PlayerReset = LocalPlayer:FindFirstChild("Reset"
+        PlayerReset = LocalPlayer:FindFirstChild("Reset"),
     }
 }
 
