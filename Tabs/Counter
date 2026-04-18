@@ -273,7 +273,7 @@ CounterTab:CreateButton({
                 if part and LocalPlayer.Character then
                     local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                     if hrp then
-                        hrp.CFrame = part.CFrame * CFrame.new(0,-10, 0)
+                        hrp.CFrame = part.CFrame * CFrame.new(0,-4, 0)
                         Stewfield:Notify({
                             Title = "Teleported",
                             Content = "Teleported to the Counter Glove location.",
