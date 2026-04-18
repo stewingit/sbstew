@@ -1,20 +1,21 @@
 -- PLATE GLOVE TAB SCRIPT
+if not getgenv().sbstew_Utils then
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Stuff"))()
+end
+
 local Stewfield = getgenv().sbstew_Stewfield
 local Window = getgenv().sbstew_Window
 local Places = getgenv().sbstew_Places
+local Utils = getgenv().sbstew_Utils
 local LocalPlayer = game.Players.LocalPlayer
 
--- Create Tab
 local PlateTab = Window:CreateTab("Plate Glove", "disc")
 PlateTab:CreateLabel("Plate Glove Buttons")
 
--- 1. Go to Plate Place Button
 PlateTab:CreateButton({
     Name = "Go to plate place",
     Callback = function()
-        local LobbyPath = workspace:FindFirstChild(LocalPlayer.Name) and workspace[LocalPlayer.Name]:FindFirstChild("InLobby")
-
-        if not LobbyPath then
+        if not Utils.IsInLobby() then
             Stewfield:Notify({
                 Title = "Required",
                 Content = "You must be in the Lobby.",
@@ -31,28 +32,15 @@ PlateTab:CreateButton({
             local character = LocalPlayer.Character
             local hum = character:FindFirstChildOfClass("Humanoid")
             local rootPart = character:FindFirstChild("HumanoidRootPart")
-            local portal = workspace.Lobby.Teleport1
             local targetPlate = workspace.Arena.Plate
             local targetText = workspace.Arena.Plate.Sign.Text
 
-            -- 1. Walk to Portal
-            if hum and portal then
-                hum:MoveTo(portal.Position)
-                local entered = false
-                local connection
-                connection = portal.Touched:Connect(function(hit)
-                    if hit:IsDescendantOf(character) then
-                        entered = true
-                        connection:Disconnect()
-                    end
-                end)
-                
-                local start = tick()
-                repeat task.wait() until entered or (tick() - start > 5)
-                task.wait(0.5) 
-            end
+            Utils.WalkToPortal()
+            
+            local start = tick()
+            repeat task.wait() until not Utils.IsInLobby() or (tick() - start > 5)
+            task.wait(0.5) 
 
-            -- 2. Tp to plate
             if hum and rootPart and targetPlate and targetText then
                 hum.Jump = true 
                 task.wait(0.1)
@@ -67,7 +55,6 @@ PlateTab:CreateButton({
                 task.wait(0.2)
             end
 
-            -- 3. Auto Slap
             getgenv().PlateSlapActive = true
             Stewfield:Notify({
                 Title = "Auto Slap",
@@ -82,13 +69,11 @@ PlateTab:CreateButton({
                     local root = char and char:FindFirstChild("HumanoidRootPart")
                     local tool = char and char:FindFirstChildOfClass("Tool")
                     
-                    -- Check if player died to stop loop
                     if not char or not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then
                         getgenv().PlateSlapActive = false
                         break
                     end
 
-                    -- Reach
                     if tool then
                         local handle = tool:FindFirstChild("Handle") or tool:FindFirstChildOfClass("Part")
                         if handle then
@@ -99,7 +84,6 @@ PlateTab:CreateButton({
                         tool:Activate()
                     end
 
-                    -- Constant Lock
                     if root and targetText then
                         local signPos = targetText.Position
                         root.CFrame = CFrame.lookAt(
@@ -121,7 +105,6 @@ PlateTab:CreateButton({
     end,
 })
 
--- 2. Delete Obstacles Toggle
 PlateTab:CreateToggle({
     Name = "Delete all obstacles",
     CurrentValue = false,
@@ -131,7 +114,6 @@ PlateTab:CreateToggle({
             local obstacles = workspace:FindFirstChild("Obstacles") or game:GetService("ReplicatedStorage"):FindFirstChild("Obstacles")
             
             if Value then
-                -- Remove them (Move to ReplicatedStorage to hide them)
                 if obstacles then
                     obstacles.Parent = game:GetService("ReplicatedStorage")
                     Stewfield:Notify({
@@ -142,7 +124,6 @@ PlateTab:CreateToggle({
                     })
                 end
             else
-                -- Bring them back
                 if obstacles then
                     obstacles.Parent = workspace
                     Stewfield:Notify({
@@ -154,7 +135,6 @@ PlateTab:CreateToggle({
                 end
             end
             
-            -- Keep your completion notification logic
             if Value then
                 task.spawn(function()
                     local connection
@@ -182,7 +162,6 @@ PlateTab:CreateToggle({
     end,
 })
 
--- 3. Go to Glove Button
 PlateTab:CreateButton({
     Name = "Go to glove",
     Callback = function()
