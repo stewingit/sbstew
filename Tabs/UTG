@@ -1,9 +1,13 @@
 -- UNTITLED TAG GLOVE TAB SCRIPT
+if not getgenv().sbstew_Utils then
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Stuff"))()
+end
+
 local Stewfield = getgenv().sbstew_Stewfield
 local Window = getgenv().sbstew_Window
 local Places = getgenv().sbstew_Places
+local Utils = getgenv().sbstew_Utils
 
--- Internal Helper Functions
 local function sendMyMessage(messageText)
     local TextChatService = game:GetService("TextChatService")
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,7 +22,6 @@ local function sendMyMessage(messageText)
     end
 end
 
--- Create Tab
 local UTGTab = Window:CreateTab("Untitled Tag Glove", "tag")
 UTGTab:CreateLabel("Untitled Tag Glove Buttons")
 
