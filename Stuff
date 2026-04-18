@@ -1,0 +1,90 @@
+local currentPlaceId = game.PlaceId
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+
+-- Define Places Globally
+getgenv().sbstew_Places = {
+    ["Lobby"]       = (currentPlaceId == 6403373529), -- normal lobby
+    ["Lobby2"]      = (currentPlaceId == 6403373529 or currentPlaceId == 9015014224), -- normal and no-oneshots
+    ["Lobby3"]      = (currentPlaceId == 6403373529 or currentPlaceId == 9015014224 or currentPlaceId == 11520107397), -- ks also
+    ["Barzil"]      = (currentPlaceId == 7234087065),
+    ["UTG_Obby"]    = (currentPlaceId == 115782629143468),
+    ["Application"] = (currentPlaceId == 16034567693),
+    ["Plate"]       = (currentPlaceId == 106620300132058),
+    ["Maze"]        = (currentPlaceId == 11828384869),
+}
+
+getgenv().sbstew_LoadedAnyTab = false 
+
+-- Define shouldLoad Globally
+getgenv().shouldLoad = function(locationList)
+    local Places = getgenv().sbstew_Places
+    for _, name in pairs(locationList) do
+        if Places[name] then 
+            getgenv().sbstew_LoadedAnyTab = true
+            return true 
+        end
+    end
+    return false
+end
+
+-- Define Remote Library
+getgenv().sbstew_Remotes = {
+    Slap = {
+        Default = ReplicatedStorage:WaitForChild("b", 2),
+        Dual = ReplicatedStorage:WaitForChild("GeneralHit", 2),
+        Snow = ReplicatedStorage:WaitForChild("SnowHit", 2),
+        Warp = ReplicatedStorage:WaitForChild("WarpHt", 2),
+        Dice = ReplicatedStorage:WaitForChild("DiceHit", 2),
+        Swapper = ReplicatedStorage:WaitForChild("HitSwapper", 2)
+    },
+    Ability = {
+        Warp = ReplicatedStorage:WaitForChild("WLOC", 2),
+        Swapper = ReplicatedStorage:WaitForChild("SLOC", 2)
+    },
+    Misc = {
+        Reset = ReplicatedStorage:WaitForChild("SelfDestruct", 2) or ReplicatedStorage:WaitForChild("Reset", 2),
+        PlayerReset = LocalPlayer:FindFirstChild("Reset"),
+    }
+}
+
+-- Define Utility Commands
+getgenv().sbstew_Utils = {}
+
+function getgenv().sbstew_Utils.GetStats()
+    local stats = LocalPlayer:FindFirstChild("leaderstats")
+    local slaps = (stats and stats:FindFirstChild("Slaps")) and stats.Slaps.Value or 0
+    local currentGlove = (stats and stats:FindFirstChild("Glove")) and stats.Glove.Value or "None"
+    return slaps, currentGlove
+end
+
+function getgenv().sbstew_Utils.IsInLobby(Character)
+    local Char = Character or LocalPlayer.Character
+    return Char and Char:FindFirstChild("InLobby")
+end
+
+function getgenv().sbstew_Utils.WalkToPortal()
+    local Character = LocalPlayer.Character
+    if Character and getgenv().sbstew_Utils.IsInLobby(Character) then
+        local Humanoid = Character:FindFirstChildWhichIsA("Humanoid")
+        local Portal = Workspace.Lobby:FindFirstChild("Teleport1")
+        if Humanoid and Portal then
+            Humanoid:MoveTo(Portal.Position)
+        end
+    end
+end
+
+function getgenv().sbstew_Utils.EquipGlove(GloveName)
+    local Lobby = Workspace:FindFirstChild("Lobby")
+    if Lobby then
+        local GloveObj = Lobby:WaitForChild(GloveName, 2)
+        if GloveObj then
+            local ClickDetector = GloveObj:FindFirstChildOfClass("ClickDetector")
+            if ClickDetector then
+                fireclickdetector(ClickDetector)
+            end
+        end
+    end
+end
