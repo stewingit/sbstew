@@ -31,8 +31,8 @@ local Window = Stewfield:CreateWindow({
 
 g.sbstew_Window = Window
 
---- 4. External Logic & Place ID Storage ---
-loadstring(game:HttpGet("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Places"))()
+--- 4. External Logic ---
+loadstring(game:HttpGet("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Stuff"))()
 
 local createdTabs = {}
 
