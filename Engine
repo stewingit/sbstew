@@ -1,4 +1,4 @@
--- [[ BOT ENGINE LIBRARY - V2 ]] --
+-- [[ BOT ENGINE LIBRARY - V3 ]] --
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
@@ -8,7 +8,7 @@ local RunService = game:GetService("RunService")
 local Grass = Workspace.Arena["main island"].Grass
 local ZeroPosition = Grass.Position
 local BotSpeed = 21
-local RoamRange = 180
+local RoamRange = 160
 local MaxLockDistance = 80
 local AcceptableDistance = 15
 
@@ -119,9 +119,9 @@ function BotEngine.GetValidTarget(LocalHumanoid, SpecificRange)
                     local Distance = (LocalHumanoid.RootPart.Position - Root.Position).Magnitude
                     local InMap = (Root.Position - ZeroPosition).Magnitude < RoamRange
                     
-                    -- Filter Logic
+                    -- Filter Logic (Matched exactly to previous script)
                     local InLobby = Character:FindFirstChild("InLobby")
-                    local Rock = Character:FindFirstChild("rock") or Character:FindFirstChild("megarock")
+                    local Rock = Character:FindFirstChild("rock")
                     local Reverse = Character:FindFirstChild("Reversed")
                     local Skull = Character:FindFirstChild("Skull")
                     local Counter = Character:FindFirstChild("Counterd")
@@ -130,7 +130,7 @@ function BotEngine.GetValidTarget(LocalHumanoid, SpecificRange)
                     local BuddyBox = Character:FindFirstChild("Head") and Character.Head:FindFirstChild("BuddyBox")
                     local Ragdolled = Character:FindFirstChild("FakePart Right Arm")
 
-                    local Approved = (InMap and Distance < ShortestDistance and not Rock and not Reverse and not Steve and not Skull and Visible and not BuddyBox and not Ragdolled and not InLobby and not Counter)
+                    local Approved = (InMap and Distance <= ShortestDistance and not Rock and not Reverse and not Steve and not Skull and Visible and not BuddyBox and not Ragdolled and not InLobby and not Counter)
 
                     if Approved then
                         ClosestPlayer = v
@@ -159,20 +159,20 @@ function BotEngine.ToggleWarpObtainment(Value)
             
             if Humanoid and Humanoid.RootPart and Character then
                 if not BotEngine.IsInLobby(Character) then
-                    -- 1. Persistent Target Locking
+                    -- 1. Persistent Target Locking Logic
                     local Target = BotEngine.LockedTarget
                     local IsValid = false
                     
-                    if Target and Target.Character and Target.Character:FindFirstChild("Humanoid") then
+                    if Target and Target.Parent == Players and Target.Character and Target.Character:FindFirstChild("Humanoid") then
                         local TRoot = Target.Character.Humanoid.RootPart
-                        local InRange = TRoot and (TRoot.Position - ZeroPosition).Magnitude < RoamRange
-                        if Target.Character.Humanoid.Health > 0 and InRange then
+                        local OutOfRange = TRoot and (TRoot.Position - ZeroPosition).Magnitude >= RoamRange
+                        if Target.Character.Humanoid.Health > 0 and not OutOfRange then
                             IsValid = true
                         end
                     end
 
                     if not IsValid then
-                        -- If we had a target and lost them, perform the Warp sequence
+                        -- If we had a target and they became invalid (died/left/out of range)
                         if BotEngine.LockedTarget then
                             getgenv().BSF = false
                             BotEngine.LockedTarget = nil
@@ -184,26 +184,32 @@ function BotEngine.ToggleWarpObtainment(Value)
                             end)
                             break
                         end
-                        -- Find new target
+                        -- Try to find a new target
                         local NewTarget = BotEngine.GetValidTarget(Humanoid)
                         BotEngine.LockedTarget = NewTarget
                     end
 
-                    -- 2. Movement & Slapping
+                    -- 2. Movement & Slapping Logic
                     if BotEngine.LockedTarget and BotEngine.LockedTarget.Character then
-                        local TRoot = BotEngine.LockedTarget.Character.Humanoid.RootPart
-                        local Distance = (Humanoid.RootPart.Position - TRoot.Position).Magnitude
+                        local TargetHumanoid = BotEngine.LockedTarget.Character:FindFirstChildWhichIsA("Humanoid")
+                        local TRoot = TargetHumanoid and TargetHumanoid.RootPart
                         
-                        Humanoid:MoveTo(BotEngine.GetPredictedPosition(TRoot))
+                        if Humanoid.Health > 0 and TRoot then
+                            local Distance = (Humanoid.RootPart.Position - TRoot.Position).Magnitude
+                            Humanoid:MoveTo(BotEngine.GetPredictedPosition(TRoot))
 
-                        if Distance < AcceptableDistance and not BotEngine.SlapCooldown then
-                            BotEngine.SlapCooldown = true
-                            local Anim = Humanoid:FindFirstChild("Animator") or Humanoid
-                            local Track = Anim:LoadAnimation(ReplicatedStorage.Slap)
-                            Track:Play()
-                            Remotes.Slap.Swapper:FireServer(TRoot)
-                            task.delay(0.6, function() BotEngine.SlapCooldown = false end)
+                            if Distance < AcceptableDistance and not BotEngine.SlapCooldown then
+                                BotEngine.SlapCooldown = true
+                                local Anim = Humanoid:FindFirstChild("Animator") or Humanoid
+                                local Track = Anim:LoadAnimation(ReplicatedStorage.Slap)
+                                Track:Play()
+                                Remotes.Slap.Swapper:FireServer(TRoot)
+                                task.delay(0.6, function() BotEngine.SlapCooldown = false end)
+                            end
                         end
+                    else
+                        -- STOP MOVING AND WAIT (Exact logic from Warp script)
+                        Humanoid:MoveTo(Humanoid.RootPart.Position)
                     end
                 else
                     -- Lobby Logic
@@ -215,7 +221,7 @@ function BotEngine.ToggleWarpObtainment(Value)
                     end
                 end
 
-                -- Dynamic Speed
+                -- Maintain Speed
                 local Speed = BotSpeed * 2 - math.clamp(Humanoid.RootPart.AssemblyLinearVelocity.Magnitude, 0, BotSpeed)
                 Humanoid.WalkSpeed = Speed
             end
