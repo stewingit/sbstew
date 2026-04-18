@@ -1,4 +1,4 @@
--- [[ BOT ENGINE LIBRARY ]] --
+-- [[ BOT ENGINE LIBRARY - V2 ]] --
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
@@ -10,7 +10,7 @@ local ZeroPosition = Grass.Position
 local BotSpeed = 21
 local RoamRange = 180
 local MaxLockDistance = 80
-local AcceptableDistance = 14
+local AcceptableDistance = 15
 
 -- Remote Library
 local Remotes = {
@@ -27,11 +27,15 @@ local Remotes = {
         Swapper = ReplicatedStorage:WaitForChild("SLOC", 2)
     },
     Misc = {
-        Reset = ReplicatedStorage:WaitForChild("SelfDestruct", 2) or ReplicatedStorage:WaitForChild("Reset", 2)
+        Reset = ReplicatedStorage:WaitForChild("SelfDestruct", 2) or ReplicatedStorage:WaitForChild("Reset", 2),
+        PlayerReset = LocalPlayer:FindFirstChild("Reset"
     }
 }
 
-local BotEngine = {}
+local BotEngine = {
+    LockedTarget = nil,
+    SlapCooldown = false
+}
 getgenv().BotEngine = BotEngine
 
 -- [[ HELPER COMMANDS ]] --
@@ -45,10 +49,35 @@ end
 
 function BotEngine.IsInLobby(Character)
     Character = Character or LocalPlayer.Character
-    if Character and Character:FindFirstChild("InLobby") then
-        return true
-    end
-    return false
+    return Character and Character:FindFirstChild("InLobby")
+end
+
+function BotEngine.ReturnValidVector3Unit(Vector)
+    if Vector.Magnitude == 0 then return Vector3.zero end
+    return Vector.Unit
+end
+
+function BotEngine.GetPredictedPosition(RootPart)
+    if not RootPart then return Vector3.zero end
+    return RootPart.Position + BotEngine.ReturnValidVector3Unit(RootPart.AssemblyLinearVelocity)
+end
+
+-- [[ CHARACTER SETUP ]] --
+
+function BotEngine.SetupCharacter(Character)
+    local Humanoid = Character:WaitForChild("Humanoid", 10)
+    Humanoid.AutomaticScalingEnabled = false
+    Humanoid.HipHeight = 0.1
+
+    -- Bot Support (Physics stabilization)
+    local Root = Character:WaitForChild("HumanoidRootPart")
+    local Support = Root:FindFirstChild("Bot Support") or Instance.new("BodyPosition")
+    Support.Position = ZeroPosition
+    Support.MaxForce = Vector3.new(200, 0, 200)
+    Support.Name = "Bot Support"
+    Support.Parent = Root
+    
+    return Humanoid
 end
 
 -- [[ LOBBY COMMANDS ]] --
@@ -65,13 +94,11 @@ function BotEngine.WalkToPortal()
 end
 
 function BotEngine.EquipGlove(GloveName)
-    if BotEngine.IsInLobby() then
-        local GloveObj = Workspace.Lobby:WaitForChild(GloveName, 2)
-        if GloveObj then
-            local ClickDetector = GloveObj:FindFirstChildOfClass("ClickDetector")
-            if ClickDetector then
-                fireclickdetector(ClickDetector)
-            end
+    local GloveObj = Workspace.Lobby:WaitForChild(GloveName, 2)
+    if GloveObj then
+        local ClickDetector = GloveObj:FindFirstChildOfClass("ClickDetector")
+        if ClickDetector then
+            fireclickdetector(ClickDetector)
         end
     end
 end
@@ -92,18 +119,18 @@ function BotEngine.GetValidTarget(LocalHumanoid, SpecificRange)
                     local Distance = (LocalHumanoid.RootPart.Position - Root.Position).Magnitude
                     local InMap = (Root.Position - ZeroPosition).Magnitude < RoamRange
                     
+                    -- Filter Logic
                     local InLobby = Character:FindFirstChild("InLobby")
                     local Rock = Character:FindFirstChild("rock") or Character:FindFirstChild("megarock")
-                    local Rob = Workspace:FindFirstChild(v.Name) and Workspace[v.Name]:FindFirstChild("RobTransformed")
                     local Reverse = Character:FindFirstChild("Reversed")
                     local Skull = Character:FindFirstChild("Skull")
                     local Counter = Character:FindFirstChild("Counterd")
                     local Steve = Character:FindFirstChild("stevebody")
+                    local Visible = Character:FindFirstChild("CarKeysCar") or (Character:FindFirstChild("Head") or Character:FindFirstChildWhichIsA("BasePart")).Transparency == 0
                     local BuddyBox = Character:FindFirstChild("Head") and Character.Head:FindFirstChild("BuddyBox")
                     local Ragdolled = Character:FindFirstChild("FakePart Right Arm")
-                    local Visible = Character:FindFirstChild("CarKeysCar") or (Character:FindFirstChild("Head") or Character:FindFirstChildWhichIsA("BasePart")).Transparency == 0
 
-                    local Approved = (InMap and Distance < ShortestDistance and not Rock and not Rob and not Reverse and not Steve and not Skull and Visible and not BuddyBox and not Ragdolled and not InLobby and not Counter)
+                    local Approved = (InMap and Distance < ShortestDistance and not Rock and not Reverse and not Steve and not Skull and Visible and not BuddyBox and not Ragdolled and not InLobby and not Counter)
 
                     if Approved then
                         ClosestPlayer = v
@@ -116,110 +143,103 @@ function BotEngine.GetValidTarget(LocalHumanoid, SpecificRange)
     return ClosestPlayer, ShortestDistance
 end
 
--- [[ TROLLING COMMANDS ]] --
+-- [[ WARP SPECIFIC LOGIC ]] --
 
-function BotEngine.TrollSwap(TargetName, TrollType)
-    local VoidPositions = {
-        Vector3.new(101, -107, 24),
-        Vector3.new(-3.6, -107, 115.4),
-        Vector3.new(-116.3, -107, 0.5),
-        Vector3.new(-4.7, -107, -111.1)
-    }
-
-    local char = LocalPlayer.Character
-    local rootPart = char and char:FindFirstChild("HumanoidRootPart")
-    if not char or not rootPart or BotEngine.IsInLobby() then return end
-
-    if TrollType == "cube of death" then
-        local cubePath = Workspace.Arena.CubeOfDeathArea:FindFirstChild("the cube of death(i heard it kills)")
-        if cubePath then
-            rootPart.CFrame = cubePath.CFrame * CFrame.new(0, 5, 0)
-        end
-    elseif TrollType == "void" then
-        local targetPos = VoidPositions[math.random(1, #VoidPositions)]
-        rootPart.CFrame = CFrame.new(targetPos) * CFrame.new(0, 5, 0)
+function BotEngine.ToggleWarpObtainment(Value)
+    getgenv().BSF = Value
+    if not Value then 
+        BotEngine.LockedTarget = nil
+        return 
     end
-    
-    task.wait(0.3)
-    if Remotes.Ability.Swapper then
-        Remotes.Ability.Swapper:FireServer()
-    end
-end
-
--- [[ BOT FARMING LOOPS ]] --
-
-local LoopActive = false
-function BotEngine.ToggleFarm(GloveType, State)
-    LoopActive = State
-    if not State then return end
-    
-    local SlapRemote = Remotes.Slap[GloveType] or Remotes.Slap.Default
-    local SlapAnimation = ReplicatedStorage:FindFirstChild(GloveType.."Slap") or ReplicatedStorage.Slap
 
     task.spawn(function()
-        local SlapCooldown = false
-        while LoopActive do
+        while getgenv().BSF do
             local Character = LocalPlayer.Character
-            local LocalHumanoid = Character and Character:FindFirstChild("Humanoid")
+            local Humanoid = Character and Character:FindFirstChild("Humanoid")
             
-            if LocalHumanoid and LocalHumanoid.RootPart then
+            if Humanoid and Humanoid.RootPart and Character then
                 if not BotEngine.IsInLobby(Character) then
-                    local TargetPlayer, Distance = BotEngine.GetValidTarget(LocalHumanoid)
-
-                    if TargetPlayer and TargetPlayer.Character then
-                        local TargetRoot = TargetPlayer.Character:FindFirstChildWhichIsA("Humanoid").RootPart
-                        if LocalHumanoid.Health > 0 and TargetRoot then
-                            -- Predict movement
-                            local TargetPosition = TargetRoot.Position + (TargetRoot.AssemblyLinearVelocity.Magnitude > 0 and TargetRoot.AssemblyLinearVelocity.Unit or Vector3.zero)
-                            LocalHumanoid:MoveTo(TargetPosition)
-
-                            if Distance < AcceptableDistance and not SlapCooldown then
-                                SlapCooldown = true
-                                local AnimTrack = LocalHumanoid:FindFirstChild("Animator") and LocalHumanoid.Animator:LoadAnimation(SlapAnimation)
-                                if AnimTrack then AnimTrack:Play() end
-                                
-                                SlapRemote:FireServer(TargetPlayer.Character:FindFirstChild("Left Arm") or TargetRoot)
-                                task.delay(0.6, function() SlapCooldown = false end)
-                            end
+                    -- 1. Persistent Target Locking
+                    local Target = BotEngine.LockedTarget
+                    local IsValid = false
+                    
+                    if Target and Target.Character and Target.Character:FindFirstChild("Humanoid") then
+                        local TRoot = Target.Character.Humanoid.RootPart
+                        local InRange = TRoot and (TRoot.Position - ZeroPosition).Magnitude < RoamRange
+                        if Target.Character.Humanoid.Health > 0 and InRange then
+                            IsValid = true
                         end
-                    else
-                        LocalHumanoid:MoveTo(LocalHumanoid.RootPart.Position)
+                    end
+
+                    if not IsValid then
+                        -- If we had a target and lost them, perform the Warp sequence
+                        if BotEngine.LockedTarget then
+                            getgenv().BSF = false
+                            BotEngine.LockedTarget = nil
+                            task.spawn(function()
+                                task.wait(0.35)
+                                if Remotes.Ability.Swapper then Remotes.Ability.Swapper:FireServer() end
+                                task.wait(1)
+                                if Remotes.Misc.PlayerReset then Remotes.Misc.PlayerReset:FireServer() end
+                            end)
+                            break
+                        end
+                        -- Find new target
+                        local NewTarget = BotEngine.GetValidTarget(Humanoid)
+                        BotEngine.LockedTarget = NewTarget
+                    end
+
+                    -- 2. Movement & Slapping
+                    if BotEngine.LockedTarget and BotEngine.LockedTarget.Character then
+                        local TRoot = BotEngine.LockedTarget.Character.Humanoid.RootPart
+                        local Distance = (Humanoid.RootPart.Position - TRoot.Position).Magnitude
+                        
+                        Humanoid:MoveTo(BotEngine.GetPredictedPosition(TRoot))
+
+                        if Distance < AcceptableDistance and not BotEngine.SlapCooldown then
+                            BotEngine.SlapCooldown = true
+                            local Anim = Humanoid:FindFirstChild("Animator") or Humanoid
+                            local Track = Anim:LoadAnimation(ReplicatedStorage.Slap)
+                            Track:Play()
+                            Remotes.Slap.Swapper:FireServer(TRoot)
+                            task.delay(0.6, function() BotEngine.SlapCooldown = false end)
+                        end
                     end
                 else
-                    -- Auto Equip & Walk to Portal if in Lobby
-                    local _, currentGlove = BotEngine.GetStats()
-                    if currentGlove ~= GloveType then
-                        BotEngine.EquipGlove(GloveType)
+                    -- Lobby Logic
+                    local _, glove = BotEngine.GetStats()
+                    if glove ~= "Swapper" then
+                        BotEngine.EquipGlove("Swapper")
                     else
                         BotEngine.WalkToPortal()
                     end
                 end
 
-                -- Maintain Speed
-                local Speed = BotSpeed * 2 - math.clamp(LocalHumanoid.RootPart.AssemblyLinearVelocity.Magnitude, 0, BotSpeed)
-                LocalHumanoid.WalkSpeed = Speed
+                -- Dynamic Speed
+                local Speed = BotSpeed * 2 - math.clamp(Humanoid.RootPart.AssemblyLinearVelocity.Magnitude, 0, BotSpeed)
+                Humanoid.WalkSpeed = Speed
             end
             RunService.RenderStepped:Wait()
         end
     end)
 end
 
--- [[ ANTI-ABUSE & FAILSAFES ]] --
+-- [[ ANTI-ABUSE LOOP ]] --
 task.spawn(function()
     while task.wait(0.3) do
         local Character = LocalPlayer.Character
-        local LocalHumanoid = Character and Character:FindFirstChild("Humanoid")
+        local Humanoid = Character and Character:FindFirstChild("Humanoid")
         
-        if LocalHumanoid and Character then
+        if Humanoid and Character then
             if not BotEngine.IsInLobby(Character) then
                 for _, v in ipairs(Character:GetChildren()) do
                     if v:IsA("BasePart") then v.CanTouch = false end
                 end
             end
 
-            local Root = LocalHumanoid.RootPart
+            local Root = Humanoid.RootPart
             if Root and (Root.Position.Magnitude > 1536 or Root.Position.Y < -20) then
-                if Remotes.Misc.Reset then Remotes.Misc.Reset:FireServer() end
+                if Remotes.Misc.PlayerReset then Remotes.Misc.PlayerReset:FireServer() end
                 task.wait(1)
             end
             
