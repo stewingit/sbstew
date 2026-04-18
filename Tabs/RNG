@@ -1,7 +1,12 @@
--- RNG GLOVE TAB SCRIPT
+if not getgenv().sbstew_Utils then
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Stuff"))()
+end
+
 local Stewfield = getgenv().sbstew_Stewfield
 local Window = getgenv().sbstew_Window
 local Places = getgenv().sbstew_Places
+local Utils = getgenv().sbstew_Utils
+local Remotes = getgenv().sbstew_Remotes
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -17,9 +22,9 @@ local MaxLockDistance = 80
 local AcceptableDistance = 14
 local TargetGlove = "Dice"
 
-local SlapRemote = ReplicatedStorage:WaitForChild("DiceHit")
+local SlapRemote = Remotes.Slap.Dice
 local SlapAnimation = ReplicatedStorage.Slap
-local Reset = LocalPlayer.Reset
+local Reset = Remotes.Misc.PlayerReset
 
 local LockedTarget = nil
 local SlapCooldown = false
@@ -29,13 +34,6 @@ local InfiniteMode = false
 
 local RNGTab = Window:CreateTab("RNG Glove", "dice-5")
 RNGTab:CreateLabel("RNG Glove Obtainment")
-
--- Function to check current slaps
-local function getStats()
-    local stats = LocalPlayer:FindFirstChild("leaderstats")
-    local slaps = (stats and stats:FindFirstChild("Slaps")) and stats.Slaps.Value or 0
-    return slaps
-end
 
 local function ReturnValidVector3Unit(Vector)
     if Vector.Magnitude == 0 then return Vector3.zero end
@@ -69,7 +67,7 @@ local function GetTarget()
                 if Root then
                     local Distance = (LocalHumanoid.RootPart.Position - Root.Position).Magnitude
                     local InMap = (Root.Position - ZeroPosition).Magnitude < RoamRange
-                    local InLobby = Character:FindFirstChild("InLobby")
+                    local InLobby = Utils.IsInLobby(Character)
                     local Rock = Character:FindFirstChild("rock")
                     local Rob = Workspace:FindFirstChild(v.Name) and Workspace[v.Name]:FindFirstChild("RobTransformed")
                     local Reverse = Character:FindFirstChild("Reversed")
@@ -80,11 +78,7 @@ local function GetTarget()
                     local BuddyBox = Character.Head:FindFirstChild("BuddyBox")
                     local Ragdolled = Character:FindFirstChild("FakePart Right Arm")
 
-
-local Approved = (InMap and Distance < ShortestDistance and not Rock and not Rob and not Reverse and not Steve and not Skull and Visible and not BuddyBox and not Ragdolled and not InLobby and not Counter)
-
-
-                    local Approved = (InMap and Distance < ShortestDistance and not Rock and not Reverse and not Steve and not Skull and Visible and not BuddyBox and not Ragdolled and not InLobby and not Counter)
+                    local Approved = (InMap and Distance < ShortestDistance and not Rock and not Rob and not Reverse and not Steve and not Skull and Visible and not BuddyBox and not Ragdolled and not InLobby and not Counter)
 
                     if Approved then
                         ClosestPlayer = v
@@ -102,7 +96,7 @@ local function StartLoops()
         while getgenv().RNG_Farm do
             local Character = LocalPlayer.Character
             if LocalHumanoid and LocalHumanoid.RootPart and Character then
-                if not Character:FindFirstChild("InLobby") then
+                if not Utils.IsInLobby(Character) then
                     local TargetPlayer, Distance = GetTarget()
 
                     if TargetPlayer and TargetPlayer.Character then
@@ -122,14 +116,11 @@ local function StartLoops()
                         LocalHumanoid:MoveTo(LocalHumanoid.RootPart.Position)
                     end
                 else
-                    -- Auto-Equip logic if in Lobby
-                    if LocalPlayer.leaderstats.Glove.Value ~= TargetGlove then
-                        local GloveObj = Workspace.Lobby:WaitForChild(TargetGlove, 2)
-                        if GloveObj then
-                            fireclickdetector(GloveObj:FindFirstChildOfClass("ClickDetector"))
-                        end
+                    local _, currentGlove = Utils.GetStats()
+                    if currentGlove ~= TargetGlove then
+                        Utils.EquipGlove(TargetGlove)
                     else
-                        LocalHumanoid:MoveTo(Workspace.Lobby.Teleport1.Position)
+                        Utils.WalkToPortal()
                     end
                 end
 
@@ -148,7 +139,7 @@ local function StartLoops()
             local Character = LocalPlayer.Character
 
             if LocalHumanoid and Character then
-                if not Character:FindFirstChild("InLobby") then
+                if not Utils.IsInLobby(Character) then
                     for _, v in ipairs(Character:GetChildren()) do
                         if v:IsA("BasePart") then v.CanTouch = false end
                     end
@@ -156,7 +147,7 @@ local function StartLoops()
 
                 local Root = LocalHumanoid.RootPart
                 if Root and (Root.Position.Magnitude > 1536 or Root.Position.Y < -20) then
-                    Reset:FireServer()
+                    if Reset then Reset:FireServer() end
                     task.wait(1)
                 end
 
@@ -168,7 +159,6 @@ local function StartLoops()
     end)
 end
 
--- Character Connection for Infinite Mode
 LocalPlayer.CharacterAdded:Connect(function(char)
     task.wait(0.5)
     if getgenv().RNG_Farm then
@@ -180,14 +170,10 @@ end)
 RNGTab:CreateButton({
     Name = "Equip Dice glove",
     Callback = function()
-        local LobbyPath = Workspace:FindFirstChild(LocalPlayer.Name) and Workspace[LocalPlayer.Name]:FindFirstChild("InLobby")
-        
-        if LobbyPath then
-            if getStats() >= 585 then
-                local GloveObj = Workspace.Lobby:WaitForChild("Dice", 2)
-                if GloveObj then
-                    fireclickdetector(GloveObj:FindFirstChildOfClass("ClickDetector"))
-                end
+        if Utils.IsInLobby() then
+            local slaps, _ = Utils.GetStats()
+            if slaps >= 585 then
+                Utils.EquipGlove("Dice")
             else
                 Stewfield:Notify({
                     Title = "Insufficient Slaps",
@@ -214,8 +200,7 @@ RNGTab:CreateToggle({
     Callback = function(Value)
         getgenv().RNG_Farm = Value
         if Value then
-            local stats = LocalPlayer:FindFirstChild("leaderstats")
-            local currentGlove = (stats and stats:FindFirstChild("Glove")) and stats.Glove.Value or "None"
+            local _, currentGlove = Utils.GetStats()
 
             if currentGlove == "Dice" then
                 if LocalPlayer.Character then
