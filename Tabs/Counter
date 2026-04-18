@@ -1,7 +1,13 @@
 -- COUNTER GLOVE TAB SCRIPT
+
+if not getgenv().sbstew_Utils then
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Stuff"))()
+end
+
 local Stewfield = getgenv().sbstew_Stewfield
 local Window = getgenv().sbstew_Window
 local Places = getgenv().sbstew_Places
+local Utils = getgenv().sbstew_Utils
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -64,8 +70,8 @@ CounterTab:CreateButton({
                 local hrp = character and character:FindFirstChild("HumanoidRootPart")
                 
                 if hrp and humanoid then
-                    if character:FindFirstChild("InLobby") then
-                        humanoid:MoveTo(Workspace.Lobby.Teleport1.Position)
+                    if Utils.IsInLobby(character) then
+                        Utils.WalkToPortal()
                         humanoid.MoveToFinished:Wait()
                         task.wait(0.9)
                     end
@@ -84,7 +90,7 @@ CounterTab:CreateButton({
                         local button = keypad.Buttons:FindFirstChild(digit)
                         if button and button:FindFirstChild("ClickDetector") then
                             fireclickdetector(button.ClickDetector)
-                            task.wait(0.35) -- Increased delay for reliability
+                            task.wait(0.35) 
                         end
                     end
                     fireclickdetector(keypad.Buttons.Enter.ClickDetector)
@@ -154,7 +160,6 @@ CounterTab:CreateButton({
     Callback = function()
         if Places["Maze"] then
             local npc = Workspace:FindFirstChild("Pim") 
-            -- Logic to attempt Pim relocation
             if npc then
                 local p_hrp = npc:FindFirstChild("HumanoidRootPart") or npc:FindFirstChild("Torso")
                 if p_hrp then
