@@ -52,11 +52,11 @@ getgenv().sbstew_Remotes = {
         Warp = ReplicatedStorage:FindFirstChild("WLOC"),
         Swapper = ReplicatedStorage:FindFirstChild("SLOC")
     },
-        Misc = {
-        Reset = (function()
+    Misc = {
+        Reset = function()
             local target = Players:FindFirstChild(LocalPlayer.Name)
             return target and target:FindFirstChild("Reset") or nil
-        end)()
+        end
     }
 }
 
@@ -155,6 +155,8 @@ Utils.IsTargetValid = function(Character)
     local Ragdolled = Character:FindFirstChild("FakePart Right Arm")
     local Rob = Workspace:FindFirstChild(PlayerName) and Workspace[PlayerName]:FindFirstChild("RobTransformed")
     local Visible = Character:FindFirstChild("CarKeysCar") or (Character:FindFirstChild("Head") or Character:FindFirstChildWhichIsA("BasePart")).Transparency == 0
+    
+    local Head = Character:FindFirstChild("Head")
     local BuddyBox = Head and Head:FindFirstChild("BuddyBox")
     
     return not InLobby and not Rock and not Reverse and not Skull and not Counter and not Steve and not Ragdolled and not BuddyBox and not Rob and Visible
@@ -180,5 +182,30 @@ Utils.SetupBotSupport = function(Character, SlapAnimation)
     
     return Humanoid, Animation
 end
+
+-- Safety Background Loop
+Utils.StartSafetyLoop = function()
+    task.spawn(function()
+        while task.wait(0.5) do
+            local Character = LocalPlayer.Character
+            local Root = Character and Character:FindFirstChild("HumanoidRootPart")
+            local LocalHumanoid = Character and Character:FindFirstChildWhichIsA("Humanoid")
+            local ResetRemote = getgenv().sbstew_Remotes.Misc.Reset()
+
+            if Root and LocalHumanoid then
+                if Root.Position.Magnitude > 1536 or Root.Position.Y < -20 then
+                    if ResetRemote then
+                        ResetRemote:FireServer()
+                    end
+                    LocalHumanoid.Health = 0
+                    task.wait(1)
+                end
+            end
+        end
+    end)
+end
+
+-- Automatically start the safety loop when Stuff script loads
+Utils.StartSafetyLoop()
 
 return true
