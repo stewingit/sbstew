@@ -1,4 +1,177 @@
+-- FARMING TAB SCRIPT
+if not getgenv().sbstew_Utils then
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Stuff"))()
+end
+
 local Stewfield = getgenv().sbstew_Stewfield
 local Window = getgenv().sbstew_Window
+local Places = getgenv().sbstew_Places
+local Utils = getgenv().sbstew_Utils
+local Remotes = getgenv().sbstew_Remotes
 
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+-- Internal Variables
+local SelectedFarmType = "bot"
+local LocalHumanoid = nil
+local Animation = nil
+local SlapCooldown = false
+local SlapAnimation = ReplicatedStorage:WaitForChild("Slap")
+
+-- Create Tab
 local FarmingTab = Window:CreateTab("Farming", "tractor")
+FarmingTab:CreateLabel("Slap Farming")
+
+-- Bot Logic Functions
+local function CharacterLoaded(Character)
+    local Hum, Anim = Utils.SetupBotSupport(Character, SlapAnimation)
+    LocalHumanoid = Hum
+    Animation = Anim
+end
+
+local function GetTarget()
+    local ClosestPlayer = nil
+    local ShortestDistance = Utils.MaxLockDistance
+
+    for _, v in ipairs(Players:GetPlayers()) do
+        local Character = v.Character
+        if v ~= LocalPlayer and Character and not LocalPlayer:IsFriendsWith(v.UserId) then
+            local Humanoid = Character:FindFirstChildWhichIsA("Humanoid")
+            if Humanoid and Humanoid.Health > 0 then
+                local Root = Humanoid.RootPart
+                if Root then
+                    local Distance = (LocalHumanoid.RootPart.Position - Root.Position).Magnitude
+                    local InMap = (Root.Position - Utils.GetZeroPosition()).Magnitude < Utils.RoamRange
+                    
+                    if InMap and Distance < ShortestDistance and Utils.IsTargetValid(Character) then
+                        ClosestPlayer = v
+                        ShortestDistance = Distance
+                    end
+                end
+            end
+        end
+    end
+    return ClosestPlayer, ShortestDistance
+end
+
+local function StartFarmingLoop()
+    task.spawn(function()
+        while getgenv().General_Farm do
+            local Character = LocalPlayer.Character
+            if LocalHumanoid and LocalHumanoid.RootPart and Character then
+                if not Utils.IsInLobby(Character) then
+                    -- Get current glove and find remote
+                    local _, currentGlove = Utils.GetStats()
+                    local CurrentRemote = Remotes.Slap[currentGlove]
+
+                    if CurrentRemote then
+                        local TargetPlayer, Distance = GetTarget()
+
+                        if TargetPlayer and TargetPlayer.Character then
+                            local TargetRoot = TargetPlayer.Character:FindFirstChildWhichIsA("Humanoid").RootPart
+                            if LocalHumanoid.Health > 0 and TargetRoot then
+                                local TargetPosition = TargetRoot.Position + Utils.ReturnValidVector3Unit(TargetRoot.AssemblyLinearVelocity)
+                                LocalHumanoid:MoveTo(TargetPosition)
+
+                                if Distance < Utils.AcceptableDistance and not SlapCooldown then
+                                    SlapCooldown = true
+                                    Animation:Play()
+                                    CurrentRemote:FireServer(TargetPlayer.Character:FindFirstChild("Left Arm") or TargetRoot)
+                                    task.delay(0.6, function() SlapCooldown = false end)
+                                end
+                            end
+                        else
+                            LocalHumanoid:MoveTo(LocalHumanoid.RootPart.Position)
+                        end
+                    else
+                        -- Remote not found for equipped glove
+                        getgenv().General_Farm = false
+                        Stewfield:Notify({
+                            Title = "Remote Error",
+                            Content = "Remote not found for " .. tostring(currentGlove) .. ". Choose another glove.",
+                            Duration = 4,
+                            Image = "circle-alert",
+                        })
+                        break
+                    end
+                else
+                    -- In Lobby, go to portal
+                    Utils.WalkToPortal()
+                end
+
+                if LocalHumanoid and LocalHumanoid.RootPart then
+                    local Speed = Utils.BotSpeed * 2 - math.clamp(LocalHumanoid.RootPart.AssemblyLinearVelocity.Magnitude, 0, Utils.BotSpeed)
+                    LocalHumanoid.WalkSpeed = Speed
+                end
+            end
+            RunService.RenderStepped:Wait()
+        end
+    end)
+    
+    -- Anti-Stuck / Tool Equipper Loop
+    task.spawn(function()
+        while task.wait(0.3) do
+            if not getgenv().General_Farm then break end
+            local Character = LocalPlayer.Character
+            if LocalHumanoid and Character and not Utils.IsInLobby(Character) then
+                for _, v in ipairs(Character:GetChildren()) do
+                    if v:IsA("BasePart") then v.CanTouch = false end
+                end
+                if not Character:FindFirstChildWhichIsA("Tool") and LocalPlayer.Backpack:FindFirstChildWhichIsA("Tool") then
+                    LocalPlayer.Backpack:FindFirstChildWhichIsA("Tool").Parent = Character
+                end
+            end
+        end
+    end)
+end
+
+-- UI Elements
+FarmingTab:CreateDropdown({
+    Name = "Farming Method",
+    Options = {"bot"},
+    CurrentOption = "bot",
+    MultipleOptions = false,
+    Callback = function(Option)
+        SelectedFarmType = Option[1]
+    end,
+})
+
+FarmingTab:CreateToggle({
+    Name = "Start Farming",
+    CurrentValue = false,
+    Flag = "GeneralFarm_Toggle",
+    Callback = function(Value)
+        getgenv().General_Farm = Value
+        
+        if Value then
+            if SelectedFarmType == "bot" then
+                Utils.StartSafetyLoop()
+                if LocalPlayer.Character then
+                    CharacterLoaded(LocalPlayer.Character)
+                    StartFarmingLoop()
+                end
+            end
+        else
+            Utils.StopSafetyLoop()
+        end
+    end,
+})
+
+-- Handle Respawning
+LocalPlayer.CharacterAdded:Connect(function(char)
+    task.wait(0.5)
+    if getgenv().General_Farm then
+        CharacterLoaded(char)
+        StartFarmingLoop()
+    end
+end)
+
+FarmingTab:CreateParagraph({
+    Title = "Farming Info",
+    Content = "The bot will automatically use the slap remote of your currently equipped glove. If the glove is not supported in 'Stuff', it will stop and notify you."
+})
+
+return FarmingTab
