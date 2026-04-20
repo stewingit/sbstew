@@ -1,3 +1,5 @@
+-- TROLLING TAB SCRIPT
+
 if not getgenv().sbstew_Utils then
     loadstring(game:HttpGet("https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Stuff"))()
 end
@@ -47,11 +49,7 @@ local function IsValidTarget(p)
     local Root = Character:FindFirstChild("HumanoidRootPart")
     if not Humanoid or not Root or Humanoid.Health <= 0 then return false end
 
-    local InLobby = Utils.IsInLobby(Character)
-    local Rock = Character:FindFirstChild("rock") or Character:FindFirstChild("megarock")
-    local Steve = Character:FindFirstChild("stevebody")
-
-    return (not Rock and not Steve and not InLobby)
+    return Utils.IsTargetValid(Character)
 end
 
 local function getClosestPlayerName()
