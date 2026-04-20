@@ -54,8 +54,6 @@ local function GetTarget(LocalHumanoid)
                     local Distance = (LocalHumanoid.RootPart.Position - Root.Position).Magnitude
                     local InMap = (Root.Position - ZeroPosition).Magnitude < RoamRange
                     
-                    local Visible = Character:FindFirstChild("CarKeysCar") or (Character:FindFirstChild("Head") or Character:FindFirstChildWhichIsA("BasePart")).Transparency == 0
-                    
                     if InMap and Distance <= MaxLockDistance and Visible and Utils.IsTargetValid(Character) then
                         return Root, Distance
                     end
