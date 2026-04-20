@@ -111,9 +111,7 @@ local function manageTab(name, locations, url, parentTab)
 
     if autoLoad then
         g.sbstew_LoadedAnyTab = true
-        task.spawn(function()
-            loadTab(url, name)
-        end)
+        loadTab(url, name)
     elseif parentTab then
         handleTab(parentTab, name, locations, url)
     end
