@@ -185,8 +185,9 @@ end
 
 -- Safety Background Loop
 Utils.StartSafetyLoop = function()
+    getgenv().sbstew_SafetyActive = true
     task.spawn(function()
-        while task.wait(0.5) do
+        while getgenv().sbstew_SafetyActive do
             local Character = LocalPlayer.Character
             local Root = Character and Character:FindFirstChild("HumanoidRootPart")
             local LocalHumanoid = Character and Character:FindFirstChildWhichIsA("Humanoid")
@@ -201,8 +202,13 @@ Utils.StartSafetyLoop = function()
                     task.wait(2)
                 end
             end
+            task.wait(0.5)
         end
     end)
+end
+
+Utils.StopSafetyLoop = function()
+    getgenv().sbstew_SafetyActive = false
 end
 
 return true
