@@ -62,6 +62,11 @@ local function GetTarget()
             LockedTarget = nil
 
             task.spawn(function()
+                -- Stop movement immediately
+                if LocalHumanoid and LocalHumanoid.RootPart then
+                    LocalHumanoid:MoveTo(LocalHumanoid.RootPart.Position)
+                end
+                
                 task.wait(0.35)
                 if AbilityRemote then AbilityRemote:FireServer() end
                 task.wait(1)
