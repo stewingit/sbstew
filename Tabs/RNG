@@ -18,7 +18,6 @@ local Workspace = game:GetService("Workspace")
 
 -- Utilizing shared values from Utils
 local ZeroPosition = Utils.GetZeroPosition()
-local BotSpeed = Utils.BotSpeed
 local RoamRange = Utils.RoamRange
 local MaxLockDistance = Utils.MaxLockDistance
 local AcceptableDistance = Utils.AcceptableDistance
@@ -100,11 +99,6 @@ local function StartLoops()
                     else
                         Utils.WalkToPortal()
                     end
-                end
-
-                if LocalHumanoid and LocalHumanoid.RootPart then
-                    local Speed = BotSpeed * 2 - math.clamp(LocalHumanoid.RootPart.AssemblyLinearVelocity.Magnitude, 0, BotSpeed)
-                    LocalHumanoid.WalkSpeed = Speed
                 end
             end
             RunService.RenderStepped:Wait()
