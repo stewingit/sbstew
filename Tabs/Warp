@@ -90,7 +90,7 @@ local function GetTarget()
                 local Root = Humanoid.RootPart
                 if Root then
                     local Distance = (LocalHumanoid.RootPart.Position - Root.Position).Magnitude
-                    local InMap = (Root.Position - ZeroPosition).Magnitude < RoamRange
+                    local InMap = (Root.Position - Utils.GetZeroPosition()).Magnitude < Utils.RoamRange
                     
                     -- Using centralized target validation from Stuff Script
                     if InMap and Distance <= MaxLockDistance and Utils.IsTargetValid(Character) then
