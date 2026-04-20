@@ -113,11 +113,11 @@ getgenv().sbstew_Remotes = {
         Pylon = ReplicatedStorage:FindFirstChild("PylonHit"),
         Leafblower = ReplicatedStorage:FindFirstChild("LeafblowerHit"),
         Lag = ReplicatedStorage:FindFirstChild("PlagueHit"),
-        ZaHando = ReplicatedStorage:FindFirstChild("zhramt"),
+        ["Za Hando"] = ReplicatedStorage:FindFirstChild("zhramt"),
         Thanos = ReplicatedStorage:FindFirstChild("GeneralHit"),
         Extended = ReplicatedStorage:FindFirstChild("b"),
         MR = ReplicatedStorage:FindFirstChild("MisterHit"),
-        THICK = ReplicatedStorage:FindFirstChild("GeneralHit"),
+        ["T H I C K"] = ReplicatedStorage:FindFirstChild("GeneralHit"),
         Moon = ReplicatedStorage:FindFirstChild("CelestialHit"),
         Fort = ReplicatedStorage:FindFirstChild("Fort"),
         Elude = ReplicatedStorage:FindFirstChild("GeneralHit"),
@@ -126,7 +126,7 @@ getgenv().sbstew_Remotes = {
         Counter = ReplicatedStorage:FindFirstChild("GeneralHit"),
         Screwdriver = ReplicatedStorage:FindFirstChild("GeneralHit"),
         BONK = ReplicatedStorage:FindFirstChild("BONK"),
-        LOLBOMB = ReplicatedStorage:FindFirstChild("GeneralHit"),
+        ["L.O.L.B.O.M.B"] = ReplicatedStorage:FindFirstChild("GeneralHit"),
         UntitledTagGlove = ReplicatedStorage:FindFirstChild("UTGHit"),
         Plate = ReplicatedStorage:FindFirstChild("GeneralHit"),
         Pinwheel = ReplicatedStorage:FindFirstChild("GeneralHit")
@@ -198,8 +198,7 @@ end
 -- 5. BOT UTILITIES
 
 -- Base Values
-Utils.BotSpeed = 21
-Utils.RoamRange = 160
+Utils.RoamRange = 300
 Utils.MaxLockDistance = 80
 Utils.AcceptableDistance = 15
 
