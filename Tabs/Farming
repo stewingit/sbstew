@@ -63,7 +63,6 @@ local function StartFarmingLoop()
             local Character = LocalPlayer.Character
             if LocalHumanoid and LocalHumanoid.RootPart and Character then
                 if not Utils.IsInLobby(Character) then
-                    -- Get current glove and find remote
                     local _, currentGlove = Utils.GetStats()
                     local CurrentRemote = Remotes.Slap[currentGlove]
 
@@ -100,11 +99,6 @@ local function StartFarmingLoop()
                 else
                     -- In Lobby, go to portal
                     Utils.WalkToPortal()
-                end
-
-                if LocalHumanoid and LocalHumanoid.RootPart then
-                    local Speed = Utils.BotSpeed * 2 - math.clamp(LocalHumanoid.RootPart.AssemblyLinearVelocity.Magnitude, 0, Utils.BotSpeed)
-                    LocalHumanoid.WalkSpeed = Speed
                 end
             end
             RunService.RenderStepped:Wait()
