@@ -172,7 +172,7 @@ RNGTab:CreateToggle({
     Callback = function(Value)
         getgenv().RNG_Farm = Value
         if Value then
-            Utils.StartSafetyLoop("RNG_Farm")
+            Utils.StartSafetyLoop()
             
             local _, currentGlove = Utils.GetStats()
 
@@ -189,6 +189,8 @@ RNGTab:CreateToggle({
                     Image = "lock"
                 })
             end
+        else
+            Utils.StopSafetyLoop()
         end
     end,
 })
