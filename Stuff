@@ -29,6 +29,10 @@ getgenv().sbstew_LoadedAnyTab = false
 getgenv().shouldLoad = function(locationList)
     local Places = getgenv().sbstew_Places
     if not Places then return false end
+
+    if type(locationList) ~= "table" then
+        return false
+    end
     
     for _, name in pairs(locationList) do
         if Places[name] then 
