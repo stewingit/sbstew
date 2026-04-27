@@ -119,7 +119,7 @@ end
 
 g.sbstew_LoadedAnyTab = false
 
-manageTab("Farming", {"Lobby2"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Farming", MiscTab)
+manageTab("Farming", {"Lobby3"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Farming", MiscTab)
 manageTab("Trolling", {"Lobby2"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Trolling", MiscTab)
 
 manageTab("Admin", {"Lobby3", "Application"}, "https://raw.githubusercontent.com/stewingit/sbstew/refs/heads/main/Tabs/Admin", BadgeTab)
