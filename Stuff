@@ -57,7 +57,7 @@ getgenv().sbstew_Remotes = {
         Brick = ReplicatedStorage:FindFirstChild("BrickHit"),
         Diamond = ReplicatedStorage:FindFirstChild("DiamondHit"),
         OVERKILL = ReplicatedStorage:FindFirstChild("Overkillhit"),
-        Golden = ReplicatedStorage:FindFirstChild("GoldenHit"),
+        Golden = { ReplicatedStorage:FindFirstChild("GoldenHit"), true },
         Reaper = ReplicatedStorage:FindFirstChild("ReaperHit"),
         Replica = ReplicatedStorage:FindFirstChild("ReplicaHit"),
         Reverse = ReplicatedStorage:FindFirstChild("ReverseHit"),
@@ -408,24 +408,27 @@ end
 -- Common Target Validation
 Utils.IsTargetValid = function(Character)
     if not Character then return false end
-    
+
     local Player = Players:GetPlayerFromCharacter(Character)
     local PlayerName = Player and Player.Name or ""
 
     local InLobby = Utils.IsInLobby(Character)
     local Rock = Character:FindFirstChild("rock") or Character:FindFirstChild("megarock")
-    local Golden = (Character:FindFirstChild("Torso") or Character:FindFirstChild("UpperTorso")) and (Character:FindFirstChild("Torso") or Character:FindFirstChild("UpperTorso")).Material == Enum.Material.Neon and (Character:FindFirstChild("Torso") or Character:FindFirstChild("UpperTorso")).BrickColor == BrickColor.new("New Yeller")
+    local Torso = Character:FindFirstChild("Torso") or Character:FindFirstChild("UpperTorso")
+    local Golden = Torso and Torso.Material == Enum.Material.Neon and Torso.BrickColor == BrickColor.new("New Yeller")
     local Reverse = Character:FindFirstChild("Reversed")
     local Skull = Character:FindFirstChild("Skull")
     local Counter = Character:FindFirstChild("Counterd")
     local Steve = Character:FindFirstChild("stevebody")
     local Ragdolled = Character:FindFirstChild("FakePart Right Arm")
-    local Rob = Workspace:FindFirstChild(PlayerName) and Workspace[PlayerName]:FindFirstChild("RobTransformed")
-    local Visible = Character:FindFirstChild("CarKeysCar") or (Character:FindFirstChild("Head") or Character:FindFirstChildWhichIsA("BasePart")).Transparency == 0
-    local Head = Character:FindFirstChild("Head")
+    local Rob = Character:FindFirstChild("RobTransformed")
+    local Egg = Character:FindFirstChild("Egg")
+    local Head = Character:FindFirstChild("Head") or Character:FindFirstChildWhichIsA("BasePart")
     local BuddyBox = Head and Head:FindFirstChild("BuddyBox")
-    
-    return not InLobby and not Rock and not Golden and not Reverse and not Skull and not Counter and not Steve and not Ragdolled and not BuddyBox and not Rob and Visible
+    local Visible = Character:FindFirstChild("CarKeysCar") or (Head and Head.Transparency == 0) or Egg
+    local ShopSafezone = Workspace:FindFirstChild(PlayerName .. "_shop") and Workspace[PlayerName .. "_shop"]:FindFirstChild("shop_model") and Workspace[PlayerName .. "_shop"].shop_model:FindFirstChild("Safezone")
+
+    return not InLobby and not Rock and not Golden and not Reverse and not Skull and not Counter and not Steve and not Ragdolled and not BuddyBox and not Rob and not ShopSafezone and Visible
 end
 
 -- Common Character & Animation Setup
