@@ -57,7 +57,6 @@ getgenv().sbstew_Remotes = {
         Brick = ReplicatedStorage:FindFirstChild("BrickHit"),
         Diamond = ReplicatedStorage:FindFirstChild("DiamondHit"),
         OVERKILL = ReplicatedStorage:FindFirstChild("Overkillhit"),
-        Golden = ReplicatedStorage:FindFirstChild("GoldenHit"),
         Reaper = ReplicatedStorage:FindFirstChild("ReaperHit"),
         Replica = ReplicatedStorage:FindFirstChild("ReplicaHit"),
         Reverse = ReplicatedStorage:FindFirstChild("ReverseHit"),
