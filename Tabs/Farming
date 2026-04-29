@@ -15,7 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 -- Internal Variables
-local SelectedFarmType = {"bot"}
+local SelectedFarmType = "bot"
 local LocalHumanoid = nil
 local Animation = nil
 local SlapCooldown = false
@@ -45,7 +45,7 @@ local function GetTarget()
                 if Root then
                     local Distance = (LocalHumanoid.RootPart.Position - Root.Position).Magnitude
                     local InMap = (Root.Position - Utils.GetZeroPosition()).Magnitude < Utils.RoamRange
-                    
+
                     if InMap and Distance < ShortestDistance and Utils.IsTargetValid(Character) then
                         ClosestPlayer = v
                         ShortestDistance = Distance
@@ -66,46 +66,44 @@ local function StartFarmingLoop()
                     local _, currentGlove = Utils.GetStats()
                     local CurrentRemote = Remotes.Slap[currentGlove]
 
-                    if table.find(SelectedFarmType, "bot") then
-                        if CurrentRemote then
-                            local TargetPlayer, Distance = GetTarget()
+                    if CurrentRemote then
+                        local TargetPlayer, Distance = GetTarget()
 
-                            if TargetPlayer and TargetPlayer.Character then
-                                local TargetRoot = TargetPlayer.Character:FindFirstChildWhichIsA("Humanoid").RootPart
-                                if LocalHumanoid.Health > 0 and TargetRoot then
-                                    local TargetPosition = TargetRoot.Position + Utils.ReturnValidVector3Unit(TargetRoot.AssemblyLinearVelocity)
-                                    LocalHumanoid:MoveTo(TargetPosition)
+                        if TargetPlayer and TargetPlayer.Character then
+                            local TargetRoot = TargetPlayer.Character:FindFirstChildWhichIsA("Humanoid").RootPart
+                            if LocalHumanoid.Health > 0 and TargetRoot then
+                                local TargetPosition = TargetRoot.Position + Utils.ReturnValidVector3Unit(TargetRoot.AssemblyLinearVelocity)
+                                LocalHumanoid:MoveTo(TargetPosition)
 
-                                    if Distance < Utils.AcceptableDistance and not SlapCooldown then
-                                        SlapCooldown = true
-                                        Animation:Play()
-                                        CurrentRemote:FireServer(TargetPlayer.Character:FindFirstChild("Left Arm") or TargetRoot)
-                                        task.delay(0.6, function() SlapCooldown = false end)
-                                    end
+                                if Distance < Utils.AcceptableDistance and not SlapCooldown then
+                                    SlapCooldown = true
+                                    Animation:Play()
+                                    CurrentRemote:FireServer(TargetPlayer.Character:FindFirstChild("Left Arm") or TargetRoot)
+                                    task.delay(0.6, function() SlapCooldown = false end)
                                 end
-                            else
-                                LocalHumanoid:MoveTo(LocalHumanoid.RootPart.Position)
                             end
                         else
-                            local ResetRemote = Remotes.Misc.Reset()
-                            if ResetRemote then
-                                ResetRemote:FireServer()
-                            end
-                            LocalHumanoid.Health = 0
-                            
-                            getgenv().General_Farm = false
-                            if getgenv().GeneralFarm_Toggle then
-                                getgenv().GeneralFarm_Toggle:Set(false)
-                            end
-
-                            Stewfield:Notify({
-                                Title = "Unsupported glove",
-                                Content = "" .. tostring(currentGlove) .. "is not supported for farming.",
-                                Duration = 4,
-                                Image = "circle-alert",
-                            })
-                            break
+                            LocalHumanoid:MoveTo(LocalHumanoid.RootPart.Position)
                         end
+                    else
+                        local ResetRemote = Remotes.Misc.Reset()
+                        if ResetRemote then
+                            ResetRemote:FireServer()
+                        end
+                        LocalHumanoid.Health = 0
+
+                        getgenv().General_Farm = false
+                        if getgenv().GeneralFarm_Toggle then
+                            getgenv().GeneralFarm_Toggle:Set(false)
+                        end
+
+                        Stewfield:Notify({
+                            Title = "Unsupported glove",
+                            Content = "" .. tostring(currentGlove) .. " is not supported for farming.",
+                            Duration = 4,
+                            Image = "circle-alert",
+                        })
+                        break
                     end
                 else
                     task.wait(1)
@@ -115,7 +113,7 @@ local function StartFarmingLoop()
             RunService.RenderStepped:Wait()
         end
     end)
-    
+
     -- Anti-Stuck / Tool Equipper Loop
     task.spawn(function()
         while task.wait(0.3) do
@@ -134,37 +132,32 @@ local function StartFarmingLoop()
 end
 
 -- UI Elements
-local FarmingDropdown
-FarmingDropdown = FarmingTab:CreateDropdown({
+local FarmOptions = {
+    "bot",
+    "slapple farm",
+    "tournament farm",
+    "slapple serverhop farm",
+    "snow farm (WILL KICK)"
+}
+
+local FarmingDropdown = FarmingTab:CreateDropdown({
     Name = "Farming Method",
-    Options = {"bot", "slapple farm", "slapple serverhop farm", "tournament farm", "snow farm (WILL KICK)"},
+    Options = FarmOptions,
     CurrentOption = {"bot"},
     MultipleOptions = true,
     Callback = function(Options)
-        local lastSelected = ""
-        for _, opt in ipairs(Options) do
-            if not table.find(SelectedFarmType, opt) then
-                lastSelected = opt
-                break
-            end
+        local function Force(option)
+            FarmingDropdown:Set({option})
+            SelectedFarmType = option
+            return
         end
-
-        if lastSelected == "slapple serverhop farm" or lastSelected == "snow farm (WILL KICK)" then
-            SelectedFarmType = {lastSelected}
-            FarmingDropdown:Set({lastSelected})
-        else
-            local NewList = {}
-            for _, opt in ipairs(Options) do
-                if opt ~= "slapple serverhop farm" and opt ~= "snow farm (WILL KICK)" then
-                    table.insert(NewList, opt)
-                end
-            end
-            
-            if #NewList ~= #Options then
-                FarmingDropdown:Set(NewList)
-            end
-            SelectedFarmType = NewList
+        if table.find(Options, "snow farm (WILL KICK)") then
+            return Force("snow farm (WILL KICK)")
         end
+        if table.find(Options, "slapple serverhop farm") then
+            return Force("slapple serverhop farm")
+        end
+        SelectedFarmType = Options[#Options]
     end,
 })
 
@@ -174,12 +167,14 @@ getgenv().GeneralFarm_Toggle = FarmingTab:CreateToggle({
     Flag = "GeneralFarm_Toggle",
     Callback = function(Value)
         getgenv().General_Farm = Value
-        
+
         if Value then
-            Utils.StartSafetyLoop()
-            if LocalPlayer.Character then
-                CharacterLoaded(LocalPlayer.Character)
-                StartFarmingLoop()
+            if SelectedFarmType == "bot" then
+                Utils.StartSafetyLoop()
+                if LocalPlayer.Character then
+                    CharacterLoaded(LocalPlayer.Character)
+                    StartFarmingLoop()
+                end
             end
         else
             Utils.StopSafetyLoop()
@@ -198,7 +193,7 @@ end)
 
 FarmingTab:CreateParagraph({
     Title = "Farming Info",
-    Content = "The bot will automatically use the slap remote of your currently equipped glove. Exclusive modes (Serverhop/Snow) cannot be combined with other farms."
+    Content = "The bot will automatically use the slap remote of your currently equipped glove. If the glove is not supported, it will stop and notify you."
 })
 
 return FarmingTab
